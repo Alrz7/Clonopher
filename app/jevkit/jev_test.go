@@ -131,7 +131,7 @@ A web-related file belongs here only when concurrency is the primary technical s
 
 func TestSend(t *testing.T) {
 	payload := Request{
-		Provider: &JevProvider{Name: "ollama",
+		Provider: &Provider{Name: "ollama",
 			Url:    "http://127.0.0.1:11434/v1/systemone",
 			Models: []string{"tev1:0.8b"}},
 		Model: "tev1:0.8b",
@@ -148,7 +148,7 @@ func TestSend(t *testing.T) {
 			},
 		},
 	}
-	resp, err := payload.Send()
+	resp, err := payload.SendTo("tev1:0.8b")
 	if err != nil {
 		fmt.Println(err)
 	}

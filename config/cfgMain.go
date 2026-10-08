@@ -3,8 +3,8 @@ package config
 import "clonopher/app/jevkit"
 
 type Config struct {
-	App       *App                 `koanf:"app"`
-	Providers []jevkit.JevProvider `koanf:"providers"`
+	App       *App              `koanf:"app"`
+	Providers []jevkit.Provider `koanf:"providers"`
 }
 
 type App struct {

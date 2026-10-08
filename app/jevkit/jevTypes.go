@@ -1,6 +1,6 @@
 package jevkit
 
-type JevProvider struct {
+type Provider struct {
 	Name   string   `koanf:"name"`
 	Url    string   `koanf:"url"`
 	Models []string `koanf:"models"`
@@ -15,8 +15,8 @@ type Question struct {
 }
 
 type Request struct {
-	Provider  *JevProvider        `json:"-"`
-	Model     string              `json:"model"`
+	Provider  *Provider           `json:"-"`
+	Model     JevModel              `json:"model"`
 	State     string              `json:"state"`
 	Questions map[string]Question `json:"questions"`
 }

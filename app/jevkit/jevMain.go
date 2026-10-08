@@ -2,20 +2,27 @@ package jevkit
 
 import (
 	"bytes"
+	"clonopher/internal/helpers"
 	"clonopher/internal/loggy"
 	"encoding/json"
 	"io"
 	"net/http"
 )
 
-func (req *Request) Send() (*Response, error) {
-	b, err := json.Marshal(req)
+func (r *Request) SendTo(model JevModel) (*Response, error) {
+	r.Model = model
+	err := helpers.DoesSupportModel(r.Provider.Name, r.Provider.Models, string(r.Model))
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 	httpReq, err := http.NewRequest(
 		http.MethodPost,
-		req.Provider.Url,
+		r.Provider.Url,
 		bytes.NewReader(b),
 	)
 	if err != nil {
