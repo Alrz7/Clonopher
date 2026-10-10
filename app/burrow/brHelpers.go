@@ -1,36 +1,12 @@
 package burrow
 
 import (
-	"clonopher/app/services/composer"
-	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/spf13/fileflow"
 )
-
-type Stage struct {
-	Path  string              `yaml:"path"`
-	Roots map[string]*Stage   `yaml:"roots"`
-	Files []string            `yaml:"existingFiles"`
-	Info  *composer.StageInfo `yaml:"info"`
-}
-
-func (s *Stage) Explore() error {
-	err := filepath.WalkDir(s.Path, func(path string, d fs.DirEntry, err error) error {
-		isDir := d.IsDir()
-		if isDir {
-			if path != s.Path {
-				s.Roots[d.Name()] = &Stage{Path: path}
-				return filepath.SkipDir
-			}
-		} else {
-			s.Files = append(s.Files, d.Name())
-		}
-		return nil
-	})
-	return err
-}
 
 func (s *Stage) DropFileHere(src string) (string, error) {
 	return fileflow.Move(src, s.Path)
@@ -63,11 +39,32 @@ func (s *Stage) AddRoot(join string) *Stage {
 	newRoot := Stage{
 		Path:  path,
 		Roots: make(map[string]*Stage),
-		Info:  &composer.StageInfo{},
+		Info:  &StageInfo{},
 	}
 	return &newRoot
 }
 
 func (s *Stage) Submit() error {
 	return os.MkdirAll(s.Path, 0755)
+}
+
+func ShouldSkip(dirname string) bool {
+	var ignoredDirNames = []string{
+		// Version control metadata
+		".git",
+		".svn",
+		".hg",
+		".bzr",
+
+		// Application metadata
+		".obsidian",
+
+		// Trash directories
+		".trash",
+		".trash-1000",
+		".trashes",
+		"$recycle.bin",
+		"system volume information",
+	}
+	return slices.Contains(ignoredDirNames, dirname)
 }

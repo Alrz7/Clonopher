@@ -1,7 +1,9 @@
 package core
 
 import (
+	"clonopher/app/jevkit"
 	"clonopher/app/services/classifier"
+	"clonopher/internal"
 	"fmt"
 )
 
@@ -10,6 +12,17 @@ func (p *Payload) Serve() error {
 	if err != nil {
 		return err
 	}
+	
+	resp, err := p.Classify()
+	if err != nil {
+		return err
+	}
+	p.Act(resp)
+
+	return nil
+}
+
+func (p *Payload) Classify() (*jevkit.Response, error) {
 	dOpt := classifier.DecideOptions{
 		Name:     p.Name,
 		Stage:    p.Stage,
@@ -18,14 +31,18 @@ func (p *Payload) Serve() error {
 	}
 	req, err := dOpt.NewRequest()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp, err := req.SendTo(p.Options.Model)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Println(req)
-	fmt.Println("----------result-----------")
-	fmt.Println(resp)
-	return nil
+	// var resp *jevkit.Response = &jevkit.Response{}
+
+	return resp, nil
+}
+
+func (p *Payload) Act(resp *jevkit.Response) {
+	fmt.Println(resp.Answers[internal.Action])
 }
