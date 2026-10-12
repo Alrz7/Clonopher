@@ -4,6 +4,7 @@ import (
 	"clonopher/app/burrow"
 	"clonopher/app/jevkit"
 	"clonopher/app/services/composer"
+	"clonopher/internal"
 	"clonopher/internal/helpers"
 	"maps"
 	"slices"
@@ -45,11 +46,11 @@ func (d *DecideOptions) GetCriteria() map[string]string {
 		res[rootName] = info
 	}
 
-	res["create_new"] = `No existing child matches the file's purpose well enough. The file represents a distinct topic that justifies a new category.`
+	res[internal.ClrCreateNewFolder] = `No existing child matches the file's purpose well enough. The file represents a distinct topic that justifies a new category.`
 
-	res["stay_here"] = `The current directory is the best fit. No existing child is sufficiently relevant, and creating a new category is unnecessary.`
+	res[internal.ClrStayHere] = `The current directory is the best fit. No existing child is sufficiently relevant, and creating a new category is unnecessary.`
 
-	res["uncertain"] = `Available evidence is insufficient, or the leading candidates are too similar to distinguish reliably. Do not guess.`
+	res[internal.ClrUncertain] = `Available evidence is insufficient, or the leading candidates are too similar to distinguish reliably. Do not guess.`
 
 	return res
 }

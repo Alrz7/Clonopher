@@ -2,11 +2,12 @@ package burrow
 
 import (
 	"os"
-	"path/filepath"
 	"slices"
 
 	"github.com/spf13/fileflow"
 )
+
+// Fs-Helpers
 
 func (s *Stage) DropFileHere(src string) (string, error) {
 	return fileflow.Move(src, s.Path)
@@ -34,16 +35,6 @@ func (s *Stage) SubmitCopyFileHere(src string) (string, error) {
 	return finalPath, cErr
 }
 
-func (s *Stage) AddRoot(join string) *Stage {
-	path := filepath.Join(s.Path, join)
-	newRoot := Stage{
-		Path:  path,
-		Roots: make(map[string]*Stage),
-		Info:  &StageInfo{},
-	}
-	return &newRoot
-}
-
 func (s *Stage) Submit() error {
 	return os.MkdirAll(s.Path, 0755)
 }
@@ -67,4 +58,48 @@ func ShouldSkip(dirname string) bool {
 		"system volume information",
 	}
 	return slices.Contains(ignoredDirNames, dirname)
+}
+
+// in-memmory helpers
+
+func (s *Stage) SetRoots(roots map[string]*Stage) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Roots = roots
+}
+
+func (s *Stage) AddRoot(rootName string, root *Stage) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Roots[rootName] = root
+}
+
+func (s *Stage) SetFiles(files []string) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Files = files
+}
+
+func (s *Stage) AddFile(file string) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Files = append(s.Files, file)
+}
+
+func (s *Stage) SetInfo(info *StageInfo) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Info = info
+}
+
+func (s *Stage) SetNext(next *Stage) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Next = next
+}
+
+func (s *Stage) SetPrevious(previous *Stage) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	s.Previous = previous
 }

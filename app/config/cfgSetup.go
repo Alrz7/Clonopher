@@ -11,7 +11,7 @@ import (
 
 var K = koanf.New(".")
 
-func Setup(configPath string, AppConfig Config) {
+func (c *Config) Setup(configPath string) {
 	// configPath := filepath.Join(configDir, "marble.yaml")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -26,7 +26,7 @@ func Setup(configPath string, AppConfig Config) {
 		loggy.Fatal(err)
 	}
 
-	err = K.Unmarshal("", &AppConfig)
+	err = K.Unmarshal("", c)
 	if err != nil {
 		loggy.Fatal(err)
 	}

@@ -4,6 +4,7 @@ type Provider struct {
 	Name   string   `koanf:"name"`
 	Url    string   `koanf:"url"`
 	Models []string `koanf:"models"`
+	ApiKey string   `koanf:"api_key"`
 }
 type QaTypes string
 type JevModel string
@@ -16,7 +17,7 @@ type Question struct {
 
 type Request struct {
 	Provider  *Provider           `json:"-"`
-	Model     JevModel              `json:"model"`
+	Model     JevModel            `json:"model"`
 	State     string              `json:"state"`
 	Questions map[string]Question `json:"questions"`
 }

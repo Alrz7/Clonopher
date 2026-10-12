@@ -30,6 +30,9 @@ func (r *Request) SendTo(model JevModel) (*Response, error) {
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+	if r.Provider.ApiKey != "" {
+		httpReq.Header.Set("Authorization", r.Provider.ApiKey)
+	}
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {

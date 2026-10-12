@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/spf13/fileflow"
@@ -15,11 +16,13 @@ import (
 )
 
 type Stage struct {
-	Path  string            `yaml:"path"`
-	Roots map[string]*Stage `yaml:"roots"`
-	Files []string          `yaml:"existingFiles"`
-	Info  *StageInfo        `yaml:"info"`
-	Next  *Stage            `yaml:"next"`
+	Mu       *sync.Mutex
+	Path     string            `yaml:"path"`
+	Roots    map[string]*Stage `yaml:"roots"`
+	Files    []string          `yaml:"existingFiles"`
+	Info     *StageInfo        `yaml:"info"`
+	Previous *Stage            `yaml:"previous"`
+	Next     *Stage            `yaml:"next"`
 }
 
 type StageInfo struct {
@@ -33,6 +36,16 @@ type StageInfo struct {
 	// RelatedWords []string
 }
 
+func New(path string) *Stage {
+	return &Stage{
+		Path:  path,
+		Roots: map[string]*Stage{},
+		Mu:    &sync.Mutex{},
+	}
+}
+
+// new with options...
+
 func (s *Stage) Explore() error {
 	err := filepath.WalkDir(s.Path, func(path string, d fs.DirEntry, err error) error {
 		isDir := d.IsDir()
@@ -41,12 +54,12 @@ func (s *Stage) Explore() error {
 				return filepath.SkipDir
 			}
 			if path != s.Path {
-				root := Stage{Path: path}
+				root := New(path)
 				err = root.ReadHelperFile()
 				if err != nil {
 					return err
 				}
-				s.Roots[d.Name()] = &root
+				s.AddRoot(d.Name(), root)
 				return filepath.SkipDir
 			} else {
 				err = s.ReadHelperFile()
@@ -55,7 +68,7 @@ func (s *Stage) Explore() error {
 				}
 			}
 		} else {
-			s.Files = append(s.Files, d.Name())
+			s.AddFile(d.Name())
 		}
 		return nil
 	})
@@ -73,13 +86,12 @@ func (s *Stage) ReadHelperFile() error {
 		if err != nil {
 			return err
 		}
-		s.Info = &inf
+		s.SetInfo(&inf)
 	}
 	return nil
 }
 
 func (s *Stage) UpdateHelperFile() error {
-	s.Info.UpdatedAt = time.Now()
 	b, err := yaml.Marshal(s.Info)
 	if err != nil {
 		return err
@@ -102,7 +114,7 @@ func (s *Stage) WriteNewHelperFile(brief string) error {
 	sum := sha256.Sum256([]byte(s.Path + time.Now().String()))
 	id := hex.EncodeToString(sum[:])
 	inf.StageID = id
-	s.Info = &inf
+	s.SetInfo(&inf)
 	b, err := yaml.Marshal(inf)
 	if err != nil {
 		return err

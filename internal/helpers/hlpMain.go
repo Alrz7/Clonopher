@@ -7,8 +7,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Envelope map[string]any
-
 func DoesSupportModel(provider string, supportedModels []string, targetModel string) error {
 	if !slices.Contains(supportedModels, targetModel) {
 		return fmt.Errorf("provider [%v] does Not support model [%v]", provider, targetModel)
