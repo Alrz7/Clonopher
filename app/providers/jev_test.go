@@ -1,7 +1,8 @@
-package jevkit
+package providers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,10 +11,10 @@ import (
 )
 
 func TestJev(t *testing.T) {
-	payload := Request{
+	payload := JevRequest{
 		Model: "tev1:0.8b",
 		State: "golangGinMiddlewares.md - Gin middleware for logging",
-		Questions: map[string]Question{
+		Questions: map[string]JevQuestion{
 			"folder": {
 				Type:         "choice",
 				Instructions: "Choose the most semantically appropriate folder for the supplied state. Prefer the most specific existing concept. Do not choose a parent folder when a more specific child matches.",
@@ -100,7 +101,7 @@ A web-related file belongs here only when concurrency is the primary technical s
 		return
 	}
 
-	var out Response
+	var out JevResponse
 	if err := json.Unmarshal(body, &out); err != nil {
 		fmt.Println("unmarshal:", err)
 		fmt.Println(string(body))
@@ -130,13 +131,13 @@ A web-related file belongs here only when concurrency is the primary technical s
 }
 
 func TestSend(t *testing.T) {
-	payload := Request{
-		Provider: &Provider{Name: "ollama",
+	payload := JevRequest{
+		Provider: &Provider{
 			Url:    "http://127.0.0.1:11434/v1/systemone",
 			Models: []string{"tev1:0.8b"}},
 		Model: "tev1:0.8b",
 		State: "golangGinMiddlewares.md - Gin middleware for logging",
-		Questions: map[string]Question{
+		Questions: map[string]JevQuestion{
 			"folder": {
 				Type:         "choice",
 				Instructions: "Which folder best matches the supplied state?",
@@ -148,7 +149,7 @@ func TestSend(t *testing.T) {
 			},
 		},
 	}
-	resp, err := payload.SendTo("tev1:0.8b")
+	resp, err := payload.Send(context.Background())
 	if err != nil {
 		fmt.Println(err)
 	}

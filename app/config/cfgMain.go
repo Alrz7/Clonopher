@@ -1,40 +1,34 @@
 package config
 
 import (
-	"clonopher/app/jevkit"
-	"clonopher/app/services/composer"
 	"clonopher/internal/loggy"
+	"os"
+
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 )
 
-type Config struct {
-	App            *App                       `koanf:"app"`
-	Providers      map[string]jevkit.Provider `koanf:"providers"`
-	ActiveProvider string                     `koanf:"active_provider"`
-	ActiveModel    jevkit.JevModel                     `koanf:"active_model"`
-	Api            *ApiOptions                `koanf:"api"`
-	Cli            *CliOptions                `koanf:"cli"`
-}
+var K = koanf.New(".")
 
-type App struct {
-	RunMode string `koanf:"-"`
-	Version string `koanf:"version"`
-	Env     string `koanf:"env"`
-}
+func (c *Config) Setup(configPath string) {
+	// configPath := filepath.Join(configDir, "marble.yaml")
 
-type ApiOptions struct {
-	Port int `koanf:"port"`
-}
-
-type CliOptions struct {
-	Head string             `koanf:"head"`
-	Src  string             `koanf:"src"`
-	Info *composer.FileInfo `koanf:"info"`
-}
-
-func (c *Config) GetActiveProvider() *jevkit.Provider {
-	provider, ok := c.Providers[c.ActiveProvider]
-	if !ok {
-		loggy.Fatalf("Active-Provider <%v> Is NOT initiated inside configs...", c.ActiveProvider)
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		loggy.Fatal(err)
 	}
-	return &provider
+
+	err := K.Load(
+		file.Provider(configPath),
+		yaml.Parser(),
+	)
+	if err != nil {
+		loggy.Fatal(err)
+	}
+
+	err = K.Unmarshal("", c)
+	if err != nil {
+		loggy.Fatal(err)
+	}
+
 }

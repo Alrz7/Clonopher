@@ -2,27 +2,20 @@ package app
 
 import (
 	"clonopher/api"
+	"clonopher/app/classifiers"
 	"clonopher/app/config"
-	"clonopher/app/services/composer"
+	"clonopher/internal"
+	"clonopher/internal/loggy"
 	"context"
 	"flag"
 )
 
-const (
-	cliMode string = "cli"
-	apiMode string = "api"
-)
-
-type CliRunOptions struct {
-	Head string
-	Src  string
-}
-
 func Main() {
 	options := SetConfig()
-	if options.App.RunMode == "cli" {
+	switch options.App.RunMode {
+	case internal.CliMode, internal.DryRunMode:
 		CliRun(options)
-	} else {
+	case internal.ApiMode:
 		ctx, cancel := context.WithCancel(context.Background())
 		apiConf := api.ApiConfig{
 			Ctx:     ctx,
@@ -30,8 +23,9 @@ func Main() {
 			Options: options,
 		}
 		apiConf.Run()
+	default:
+		loggy.Fatalf("run mode [%v] is NOT valid!", options.App.RunMode)
 	}
-
 }
 
 func SetConfig() *config.Config {
@@ -39,12 +33,13 @@ func SetConfig() *config.Config {
 		App: &config.App{},
 		Api: &config.ApiOptions{},
 		Cli: &config.CliOptions{
-			Info: &composer.FileInfo{},
+			Info: &classifiers.ObjectInfo{},
 		},
 	}
 	// general flags --
-	flag.StringVar(&options.App.RunMode, "mode", cliMode, "run mode options: < cli, api >")
 	configPath := flag.String("config", "", "config path")
+	flag.StringVar(&options.App.RunMode, "mode", internal.CliMode, "run mode options: < cli, api >")
+	flag.StringVar(&options.App.ActionPolicy, "policy", internal.PlcNotify, "what should program do after raching the point: options: < copy, move, notify, ask-copy, ask-move >")
 
 	// api flags --
 	flag.StringVar(&options.App.Env, "env", "development", "Envirement")

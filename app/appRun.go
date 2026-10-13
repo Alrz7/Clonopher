@@ -10,14 +10,15 @@ import (
 
 func CliRun(c *config.Config) {
 	Payload := core.Payload{
-		Head:  filepath.Base(c.Cli.Head),
-		Name:  filepath.Base(c.Cli.Src),
-		Src:   c.Cli.Src,
-		Info:  c.Cli.Info,
-		Stage: burrow.New(c.Cli.Head),
+		Head:     filepath.Base(c.Cli.Head),
+		Name:     filepath.Base(c.Cli.Src),
+		Src:      c.Cli.Src,
+		Info:     c.Cli.Info,
+		Stage:    burrow.New(c.Cli.Head),
+		Provider: c.GetActiveProvider(),
 		Options: &core.Options{
-			Provider: c.GetActiveProvider(),
-			Model:    c.ActiveModel,
+			ActionPolicy: c.App.ActionPolicy,
+			RunMode:      c.App.RunMode,
 		},
 	}
 	err := Payload.Serve()

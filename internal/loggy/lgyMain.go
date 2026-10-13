@@ -39,19 +39,19 @@ func Warn(msg any, keyvals ...any) {
 	DefaultLogger.Warn(msg, keyvals...)
 }
 func Warnf(format string, args ...any) {
-	DefaultLogger.Warn(format, args...)
+	DefaultLogger.Warnf(format, args...)
 }
 func Error(msg any, keyvals ...any) {
 	DefaultLogger.Error(msg, keyvals...)
 }
 func Errorf(format string, args ...any) {
-	DefaultLogger.Error(format, args...)
+	DefaultLogger.Errorf(format, args...)
 }
 func Fatal(msg any, keyvals ...any) {
 	DefaultLogger.Fatal(msg, keyvals...)
 }
 func Fatalf(format string, args ...any) {
-	DefaultLogger.Fatal(format, args...)
+	DefaultLogger.Fatalf(format, args...)
 }
 
 const (

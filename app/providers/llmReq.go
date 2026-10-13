@@ -1,17 +1,17 @@
-package jevkit
+package providers
 
 import (
 	"bytes"
-	"clonopher/internal/helpers"
 	"clonopher/internal/loggy"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 )
 
-func (r *Request) SendTo(model JevModel) (*Response, error) {
+func (r *LlmRequest) SendTo(ctx context.Context, model string) (*LlmResponse, error) {
 	r.Model = model
-	err := helpers.DoesSupportModel(r.Provider.Name, r.Provider.Models, string(r.Model))
+	err := DoesSupportModel(r.Provider.Url, r.Provider.Models, r.Model)
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +20,8 @@ func (r *Request) SendTo(model JevModel) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequest(
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		r.Provider.Url,
 		bytes.NewReader(b),
@@ -49,10 +50,26 @@ func (r *Request) SendTo(model JevModel) (*Response, error) {
 		return nil, loggy.Sayf("HTTP %d: %s\n", resp.StatusCode, body)
 	}
 
-	var out Response
-	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, err
-	}
+	loggy.Info(body)
+
+	var out LlmResponse
+
+	// if err := json.Unmarshal(body, &out); err != nil {
+	// 	return nil, err
+	// }
+
+	// if !out.IsValid() {
+	// 	var retry struct {
+	// 		Result JevResponse `json:"result"`
+	// 	}
+	// 	if err := json.Unmarshal(body, &retry); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	out = retry.Result
+	// }
+	// if !out.IsValid() {
+	// 	return nil, loggy.Sayf("jev Response was not valid, Response Body: <<%v>>", body)
+	// }
 
 	return &out, nil
 }

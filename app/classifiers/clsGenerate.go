@@ -1,10 +1,10 @@
-package composer
+package classifiers
 
-type FileInfo struct {
+type ObjectInfo struct {
 	Description string `yaml:"description"`
 }
 
-func (i *FileInfo) Render() string {
+func (i *ObjectInfo) Render() string {
 	if i == nil {
 		return ""
 	}

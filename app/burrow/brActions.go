@@ -3,6 +3,7 @@ package burrow
 import (
 	"clonopher/internal"
 	"clonopher/internal/helpers"
+	"clonopher/internal/loggy"
 	"crypto/sha256"
 	"encoding/hex"
 	"io/fs"
@@ -85,6 +86,9 @@ func (s *Stage) ReadHelperFile() error {
 		err = yaml.Unmarshal(b, &inf)
 		if err != nil {
 			return err
+		}
+		if inf.Path != s.Path {
+			loggy.Warnf("helper file's path <%v> \n does NOT match the stage its placed in <%v> \n", inf.Path, s.Path)
 		}
 		s.SetInfo(&inf)
 	}

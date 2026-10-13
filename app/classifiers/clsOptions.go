@@ -1,41 +1,31 @@
-package classifier
+package classifiers
 
 import (
-	"clonopher/app/burrow"
-	"clonopher/app/jevkit"
-	"clonopher/app/services/composer"
 	"clonopher/internal"
 	"clonopher/internal/helpers"
 	"maps"
 	"slices"
 )
 
-type StateOptions struct {
-	Name     string
-	Stage    *burrow.Stage
-	Info     *composer.FileInfo
-	Provider *jevkit.Provider
-}
-
-func (s *StateOptions) Render() string {
+func (c *Case) GetState() string {
 	infoOptions := helpers.InfoOptions{
-		&helpers.InfoOption{Info: `Current directory %v Target file: %v`, Options: []any{s.Stage.Path, s.Name}},
+		&helpers.InfoOption{Info: `Current directory %v Target file: %v`, Options: []any{c.Stage.Path, c.Name}},
 
-		&helpers.InfoOption{Info: `Target file description: %v`, Options: []any{s.Info.Render()}},
+		&helpers.InfoOption{Info: `Target file description: %v`, Options: []any{c.Info.Render()}},
 
-		&helpers.InfoOption{Info: `Current directory info: %v`, Options: []any{s.Stage.Info.Render()}},
+		&helpers.InfoOption{Info: `Current directory info: %v`, Options: []any{c.Stage.Info.Render()}},
 
-		&helpers.InfoOption{Info: `Representative files in current directory: %v`, Options: []any{s.Stage.Files}},
+		&helpers.InfoOption{Info: `Representative files in current directory: %v`, Options: []any{c.Stage.Files}},
 
-		&helpers.InfoOption{Info: `Available child directories: %v`, Options: []any{slices.Sorted(maps.Keys(s.Stage.Roots))}},
+		&helpers.InfoOption{Info: `Available child directories: %v`, Options: []any{slices.Sorted(maps.Keys(c.Stage.Roots))}},
 	}
 	return infoOptions.ConcatIfExists()
 }
 
-func (d *DecideOptions) GetCriteria() map[string]string {
-	res := make(map[string]string, len(d.Stage.Roots)+3)
+func (c *Case) GetCriteria() map[string]string {
+	res := make(map[string]string, len(c.Stage.Roots)+3)
 
-	for rootName, root := range d.Stage.Roots {
+	for rootName, root := range c.Stage.Roots {
 		infoOptions := helpers.InfoOptions{
 			&helpers.InfoOption{Info: `name: %v`, Options: []any{rootName}},
 			&helpers.InfoOption{Info: `path: %v`, Options: []any{root.Path}},

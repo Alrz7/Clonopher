@@ -2,21 +2,22 @@ package burrow
 
 import (
 	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/spf13/fileflow"
 )
 
 // Fs-Helpers
-
 func (s *Stage) DropFileHere(src string) (string, error) {
-	return fileflow.Move(src, s.Path)
+	dst := filepath.Join(s.Path, filepath.Base(src))
+	return fileflow.Move(src, dst)
 }
 
 func (s *Stage) CopyFileHere(src string) (string, error) {
-	return fileflow.Copy(src, s.Path)
+	dst := filepath.Join(s.Path, filepath.Base(src))
+	return fileflow.Copy(src, dst)
 }
-
 func (s *Stage) SubmitDropFileHere(src string) (string, error) {
 	sErr := s.Submit()
 	if sErr != nil {
