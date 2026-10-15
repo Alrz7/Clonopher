@@ -11,7 +11,7 @@ func (c *Case) GetState() string {
 	infoOptions := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `Current directory %v Target file: %v`, Options: []any{c.Stage.Path, c.Name}},
 
-		&helpers.InfoOption{Info: `Target file description: %v`, Options: []any{c.Info.Render()}},
+		&helpers.InfoOption{Info: `File Info: %v`, Options: []any{c.Info.Render()}},
 
 		&helpers.InfoOption{Info: `Current directory info: %v`, Options: []any{c.Stage.Info.Render()}},
 

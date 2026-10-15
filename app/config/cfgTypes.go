@@ -18,7 +18,7 @@ type App struct {
 	RunMode      string `koanf:"-"`
 	Version      string `koanf:"version"`
 	Env          string `koanf:"env"`
-	ActionPolicy string `koanf:"policy"`
+	ActionPolicy string `koanf:"-"`
 }
 
 type ProviderOptions struct {

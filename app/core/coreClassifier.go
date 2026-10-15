@@ -6,63 +6,11 @@ import (
 	"clonopher/internal"
 	"clonopher/internal/helpers"
 	"clonopher/internal/loggy"
-	"context"
-	"encoding/json"
 	"fmt"
 	"maps"
 	"path/filepath"
 	"slices"
-	"time"
 )
-
-func (p *Payload) Serve() error {
-	err := p.Stage.Explore()
-	if err != nil {
-		return err
-	}
-
-	req := p.Case.NewRequest()
-	if err := p.Classify(req, p); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *Payload) Classify(req *providers.JevRequest, classifires ...classifiers.Classifier) error {
-
-	for _, cl := range classifires {
-		err := cl.Apply(&p.Case, req)
-		if err != nil {
-			return err
-		}
-	}
-
-	if p.Options.RunMode == internal.DryRunMode {
-		b, err := json.MarshalIndent(req, "", "\t")
-		if err != nil {
-			loggy.Fatal(err)
-		}
-		loggy.Info(string(b))
-		return nil
-	}
-
-	sctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	resp, err := req.Send(sctx)
-	if err != nil {
-		return err
-	}
-
-	for _, cl := range classifires {
-		err := cl.Resolve(&p.Case, resp)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 func (*Payload) Apply(c *classifiers.Case, req *providers.JevRequest) error {
 	var q = providers.JevQuestion{
@@ -109,13 +57,12 @@ func (p *Payload) Resolve(_ *classifiers.Case, resp *providers.JevResponse) erro
 		fmt.Println("options: ", options)
 		fmt.Println("moving to --> " + choise)
 		p.Stage = Next
-		err := p.Serve()
-		if err != nil {
-			return err
-		}
+
 	case choise == internal.ClrCreateNewFolder:
 		fmt.Println("seems like we need to create new folder cuh!")
+		p.Actions.Set(classifiers.AC_CREATE)
 	case choise == internal.ClrStayHere:
+		p.Actions.Set(classifiers.AC_STAY)
 		switch p.Options.ActionPolicy {
 		case internal.PlcCopy:
 			finalPath, err := p.Stage.CopyFileHere(p.Src) // returns final path too
@@ -134,6 +81,7 @@ func (p *Payload) Resolve(_ *classifiers.Case, resp *providers.JevResponse) erro
 			loggy.Info("Lets Drop it here!", "action", "notification", "final path", finalPath)
 		}
 	case choise == internal.ClrUncertain:
+		p.Actions.Set(classifiers.AC_UNCERTAIN)
 		fmt.Println("im realy uncertain about this shit fam!")
 	}
 	return nil

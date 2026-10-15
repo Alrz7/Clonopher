@@ -48,7 +48,7 @@ func SetConfig() *config.Config {
 	// cli flags --
 	flag.StringVar(&options.Cli.Head, "head", "", "the Head Directory (start point)")
 	flag.StringVar(&options.Cli.Src, "src", "", "file path (source)")
-	flag.StringVar(&options.Cli.Info.Description, "info", "", "file Info")
+	// flag.StringVar(&options.Cli.Info.Description, "info", "", "file Info")
 
 	flag.Parse()
 
