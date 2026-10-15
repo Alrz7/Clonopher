@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (r *LlmRequest) SendTo(ctx context.Context, model string) (*LlmResponse, error) {
+func (r *LlmRequest) SendTo(ctx context.Context, model string) (*string, error) {
 	r.Model = model
 	err := DoesSupportModel(r.Provider.Url, r.Provider.Models, r.Model)
 	if err != nil {
@@ -50,26 +50,6 @@ func (r *LlmRequest) SendTo(ctx context.Context, model string) (*LlmResponse, er
 		return nil, loggy.Sayf("HTTP %d: %s\n", resp.StatusCode, body)
 	}
 
-	loggy.Info(body)
-
-	var out LlmResponse
-
-	// if err := json.Unmarshal(body, &out); err != nil {
-	// 	return nil, err
-	// }
-
-	// if !out.IsValid() {
-	// 	var retry struct {
-	// 		Result JevResponse `json:"result"`
-	// 	}
-	// 	if err := json.Unmarshal(body, &retry); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	out = retry.Result
-	// }
-	// if !out.IsValid() {
-	// 	return nil, loggy.Sayf("jev Response was not valid, Response Body: <<%v>>", body)
-	// }
-
-	return &out, nil
+	res := string(body)
+	return &res, nil
 }

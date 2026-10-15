@@ -23,13 +23,14 @@ type Options struct {
 
 func New(c *config.Config) *Payload {
 	Payload := Payload{
-		Head:     filepath.Base(c.Cli.Head),
-		Name:     filepath.Base(c.Cli.Src),
-		Src:      c.Cli.Src,
-		Info:     c.Cli.Info,
-		Stage:    burrow.New(c.Cli.Head),
-		Provider: c.GetActiveProvider(),
-		Actions:  &classifiers.Actions{},
+		Head:        filepath.Base(c.Cli.Head),
+		Name:        filepath.Base(c.Cli.Src),
+		Src:         c.Cli.Src,
+		Info:        c.Cli.Info,
+		Stage:       burrow.New(c.Cli.Head),
+		JevProvider: c.GetActiveJevProvider(),
+		LlmProvider: c.GetActiveLlmProvider(),
+		Actions:     &classifiers.Actions{},
 		Options: &Options{
 			ActionPolicy: c.App.ActionPolicy,
 			RunMode:      c.App.RunMode,

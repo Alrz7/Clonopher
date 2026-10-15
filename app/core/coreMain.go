@@ -44,7 +44,7 @@ func (p *Payload) Classify(req *providers.JevRequest, classifires ...classifiers
 	// b, _ := json.MarshalIndent(req, "", "\t")
 	// loggy.Info(string(b))
 
-	sctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	sctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 
 	req.State = p.GetState()

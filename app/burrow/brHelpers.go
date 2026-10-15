@@ -92,15 +92,3 @@ func (s *Stage) SetInfo(info *StageInfo) {
 	defer s.Mu.Unlock()
 	s.Info = info
 }
-
-func (s *Stage) SetNext(next *Stage) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	s.Next = next
-}
-
-func (s *Stage) SetPrevious(previous *Stage) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	s.Previous = previous
-}

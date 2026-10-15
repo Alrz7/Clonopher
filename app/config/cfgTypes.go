@@ -22,24 +22,31 @@ type App struct {
 }
 
 type ProviderOptions struct {
-	All            map[string]providers.Provider `koanf:"all"`
-	ActiveProvider string                        `koanf:"active_provider"`
-	ActiveModel    string            `koanf:"active_model"`
+	All            map[string]*providers.Provider `koanf:"all"`
+	ActiveProvider string                         `koanf:"active_provider"`
+	ActiveModel    string                         `koanf:"active_model"`
 }
 type ApiOptions struct {
 	Port int `koanf:"port"`
 }
 
 type CliOptions struct {
-	Head string                 `koanf:"head"`
-	Src  string                 `koanf:"src"`
+	Head string                  `koanf:"head"`
+	Src  string                  `koanf:"src"`
 	Info *classifiers.ObjectInfo `koanf:"info"`
 }
 
-func (c *Config) GetActiveProvider() *providers.Provider {
+func (c *Config) GetActiveJevProvider() *providers.Provider {
 	provider, ok := c.JevProviders.All[c.JevProviders.ActiveProvider]
 	if !ok {
-		loggy.Fatalf("Active-Provider <%v> Is NOT initiated inside configs...", c.JevProviders.ActiveProvider)
+		loggy.Fatalf("Active-JevProvider <%v> Is NOT initiated inside configs...", c.JevProviders.ActiveProvider)
 	}
-	return &provider
+	return provider
+}
+func (c *Config) GetActiveLlmProvider() *providers.Provider {
+	provider, ok := c.LlmProviders.All[c.LlmProviders.ActiveProvider]
+	if !ok {
+		loggy.Fatalf("Active-LlmProvider <%v> Is NOT initiated inside configs...", c.JevProviders.ActiveProvider)
+	}
+	return provider
 }

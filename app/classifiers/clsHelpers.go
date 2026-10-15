@@ -1,6 +1,7 @@
 package classifiers
 
 import (
+	"clonopher/app/burrow"
 	"clonopher/internal"
 	"clonopher/internal/helpers"
 	"maps"
@@ -45,12 +46,7 @@ func (c *Case) GetCriteria() map[string]string {
 	return res
 }
 
-// type InstructionOptions struct {
-
-// }
-
-// func (i *InstructionOptions) Render() string{
-// 	infoOptions := internal.InfoOptions{
-// 	}
-// 	infoOptions.ConcatIfExists()
-// }
+func (c *Case) SetNext(next *burrow.Stage) {
+	c.Road = append(c.Road, next)
+	c.Stage = next
+}

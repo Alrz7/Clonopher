@@ -31,4 +31,14 @@ func (c *Config) Setup(configPath string) {
 		loggy.Fatal(err)
 	}
 
+	for title, prv := range c.JevProviders.All {
+		if prv.Name == "" {
+			prv.Name = title
+		}
+	}
+	for title, prv := range c.LlmProviders.All {
+		if prv.Name == "" {
+			prv.Name = title
+		}
+	}
 }

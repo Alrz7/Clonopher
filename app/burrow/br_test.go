@@ -6,7 +6,6 @@ import (
 )
 
 func TestMain(t *testing.T) {
-
 	b := Stage{
 		Path:  "/home/alireza/GoPrj/Clonopher/tmp",
 		Roots: make(map[string]*Stage),

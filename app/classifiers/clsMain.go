@@ -6,11 +6,13 @@ import (
 )
 
 type Case struct {
-	Name     string
-	Stage    *burrow.Stage
-	Info     *ObjectInfo
-	Provider *providers.Provider
-	Actions  *Actions
+	Name        string
+	Stage       *burrow.Stage
+	Info        *ObjectInfo
+	JevProvider *providers.Provider
+	LlmProvider *providers.Provider
+	Actions     *Actions
+	Road        []*burrow.Stage
 }
 
 type CsAction int
@@ -39,10 +41,10 @@ func (a *Actions) Set(new CsAction) {
 func (c *Case) NewRequest() *providers.JevRequest {
 	state := c.GetState()
 	req := providers.JevRequest{
-		Provider:  c.Provider,
+		Provider:  c.JevProvider,
 		State:     state,
 		Questions: map[string]providers.JevQuestion{},
-		Model:     c.Provider.ActiveModel,
+		Model:     c.JevProvider.ActiveModel,
 	}
 	return &req
 }
@@ -53,16 +55,13 @@ func (c *Case) Serve() (*providers.JevRequest, error) {
 		return nil, err
 	}
 
+	if c.Stage.Info == nil {
+		err := c.Stage.GuessStageInfo(c.LlmProvider)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	req := c.NewRequest()
 	return req, err
-}
-
-func (c *Case) ServeCopy() (*providers.JevRequest, error) {
-	cp := *c
-	return cp.Serve()
-}
-
-func (c *Case) Rebase(dst *Case) {
-	*dst = *c
-	//...
 }

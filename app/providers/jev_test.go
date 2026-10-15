@@ -155,3 +155,92 @@ func TestSend(t *testing.T) {
 	}
 	fmt.Println(resp)
 }
+
+func TestLln(t *testing.T) {
+	req := LlmRequest{
+		Provider: &Provider{
+			Url:         "http://localhost:20128/v1/chat/completions",
+			Models:      []string{"cf/@cf/meta/llama-3.2-3b-instruct"},
+			ActiveModel: "cf/@cf/meta/llama-3.2-3b-instruct",
+			ApiKey:      "Bearer ",
+		},
+		Model:  "cf/@cf/meta/llama-3.2-3b-instruct",
+		Stream: false,
+
+		Messages: []LlmMessage{
+			{
+				Role: "user",
+				Content: `Analyze this directory and the target file.
+
+Directory: /home/alireza/GoPrj/Clonopher/tmp/testing/Programming/Golang/Web/Gin
+Current brief: Examples and technical references for developing web applications using Gin in Go.
+Existing files: gin_context_notes.md, router_group_examples.go, http_error_handling.md
+Subdirectories:
+- Middleware: Reusable middleware, authentication, logging, and recovery.
+- Routing: Routes, route groups, URL parameters, and handlers.
+
+Target file: /home/alireza/Downloads/ginRateLimiter.md
+File topics: Go, Gin, middleware, rate limiting.
+Generate exactly one improved directory brief.
+
+Rules:
+- Use only facts explicitly provided in the input.
+- Never invent files, folders, or filesystem changes.
+- Treat the listed child directories as the complete set of known children.
+- Do not recommend creating folders in the brief.
+- Rewrite the existing brief; do not copy it verbatim.
+- Keep the brief under 40 words.
+- Return only the brief, without headings or explanations.`,
+			},
+		},
+
+		// Tools: []LlmTool{
+		// 	{
+		// 		Type: "function",
+		// 		Function: LlmFunction{
+		// 			Name:        "submit_directory_analysis",
+		// 			Description: "Submit a proposed folder brief and file classification recommendation. Does not modify the filesystem.",
+		// 			Parameters: map[string]any{
+		// 				"type": "object",
+		// 				"properties": map[string]any{
+		// 					"directory_path": map[string]any{
+		// 						"type": "string",
+		// 					},
+		// 					"folder_brief": map[string]any{
+		// 						"type": "string",
+		// 					},
+		// 					"action": map[string]any{
+		// 						"type": "string",
+		// 						"enum": []string{
+		// 							"Middleware",
+		// 							"Routing",
+		// 							"stay_here",
+		// 							"create_new",
+		// 							"uncertain",
+		// 						},
+		// 					},
+		// 					"reason": map[string]any{
+		// 						"type": "string",
+		// 					},
+		// 				},
+		// 				"required": []string{
+		// 					"directory_path",
+		// 					"folder_brief",
+		// 					"action",
+		// 					"reason",
+		// 				},
+		// 				"additionalProperties": false,
+		// 			},
+		// 		},
+		// 	},
+		// },
+
+		// ToolChoice: "required",
+	}
+
+	resp, err := req.SendTo(context.Background(), "cf/@cf/meta/llama-3.2-3b-instruct")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(*resp)
+}
