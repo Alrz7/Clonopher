@@ -1,10 +1,8 @@
 package core
 
 import (
-	"clonopher/app/classifiers"
 	"clonopher/app/providers"
 	"clonopher/internal"
-	"clonopher/internal/helpers"
 	"clonopher/internal/loggy"
 	"context"
 	"encoding/json"
@@ -12,23 +10,68 @@ import (
 )
 
 func (p *Payload) Serve() error {
-	for helpers.IsNotOneOf(p.Actions.Current, classifiers.AC_UNDEFINED, classifiers.AC_UNCERTAIN, classifiers.AC_CREATE, classifiers.AC_STAY) {
-		req, err := p.Case.Serve()
+
+	releventClassifiers, err := p.SelectRelevantClassifiers(&ExistingCls)
+	if err != nil {
+		return err
+	}
+	run := func() (bool, error) {
+		err = p.Stage.Explore()
 		if err != nil {
-			return err
+			return false, err
 		}
-		if err := p.Classify(req, p); err != nil {
+
+		if p.Stage.Info == nil {
+			err := p.Stage.GuessStageInfo(p.LlmProvider)
+			if err != nil {
+				return false, err
+			}
+		}
+		req := p.NewRequest()
+
+		actions, err := p.Classify(req, releventClassifiers)
+		if err != nil || actions == nil {
+			return false, err
+		}
+		err = actions.Current.Run(p)
+		if err != nil {
+			return false, err
+		}
+		return actions.Current.ReServe(), nil
+	}
+
+	reserve, err := run()
+	if err != nil {
+		return err
+	}
+	for reserve {
+		// loggy.Info("======== reserve =========")
+		// time.Sleep(4 * time.Second)
+		reserve, err = run()
+		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (p *Payload) Classify(req *providers.JevRequest, classifires ...classifiers.Classifier) error {
-	for _, cl := range classifires {
-		err := cl.Apply(&p.Case, req)
+func (p *Payload) Classify(req *providers.JevRequest, classifiers *releventCls) (*Actions, error) {
+	*classifiers = append(*classifiers, struct {
+		Cls   *CustomCls
+		Power float64
+	}{Cls: &ClsMain, Power: 0.6})
+
+	// loggy.Fatal(classifiers)
+
+	actions := Actions{
+		PerType: make(map[string]float64),
+		All:     make(map[*Action]float64),
+	}
+
+	for _, cl := range *classifiers {
+		err := cl.Cls.Apply(p, req)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -38,9 +81,9 @@ func (p *Payload) Classify(req *providers.JevRequest, classifires ...classifiers
 			loggy.Fatal(err)
 		}
 		loggy.Info(string(b))
-		p.Actions.Set(classifiers.AC_UNDEFINED)
-		return nil
+		return nil, nil
 	}
+
 	// b, _ := json.MarshalIndent(req, "", "\t")
 	// loggy.Info(string(b))
 
@@ -50,15 +93,16 @@ func (p *Payload) Classify(req *providers.JevRequest, classifires ...classifiers
 	req.State = p.GetState()
 	resp, err := req.Send(sctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, cl := range classifires {
-		err := cl.Resolve(&p.Case, resp)
+	for _, cl := range *classifiers {
+		err := cl.Cls.Resolve(p, &actions, resp, cl.Power)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	actions.GetWinningAction()
+	return &actions, nil
 }

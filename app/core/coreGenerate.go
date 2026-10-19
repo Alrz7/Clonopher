@@ -1,9 +1,8 @@
-package classifiers
+package core
 
 import (
 	"clonopher/app/burrow"
 	"clonopher/app/providers"
-	"clonopher/internal"
 	"clonopher/internal/helpers"
 	"clonopher/internal/loggy"
 	"context"
@@ -16,8 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-type ObjectInfo internal.Envelope
 
 func (i *ObjectInfo) Render() string {
 	if i == nil {
@@ -36,7 +33,6 @@ type NewStageProposal struct {
 }
 
 func parseProposal(content string) (*NewStageProposal, error) {
-	loggy.Info(content)
 	var p NewStageProposal
 
 	if err := json.Unmarshal([]byte(content), &p); err != nil {
@@ -60,14 +56,14 @@ func parseProposal(content string) (*NewStageProposal, error) {
 	return &p, nil
 }
 
-func (c Case) NewStageWithInfo() error {
+func (p Payload) NewStageWithInfo() error {
 	loggy.Info("generating Info...")
 	feed := helpers.InfoOptions{
-		&helpers.InfoOption{Info: `file-name: %v`, Options: []any{c.Name}},
-		&helpers.InfoOption{Info: `file-info: %v`, Options: []any{c.Info.Render()}},
-		&helpers.InfoOption{Info: `parentDir-path: %v`, Options: []any{c.Stage.Path}},
-		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(c.Stage.Roots))}},
-		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{c.Stage.Files}},
+		&helpers.InfoOption{Info: `file-name: %v`, Options: []any{p.Name}},
+		&helpers.InfoOption{Info: `file-info: %v`, Options: []any{p.Info.Render()}},
+		&helpers.InfoOption{Info: `parentDir-path: %v`, Options: []any{p.Stage.Path}},
+		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(p.Stage.Roots))}},
+		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{p.Stage.Files}},
 	}.ConcatIfExists()
 
 	query := `You are Clonopher's directory metadata composer.
@@ -120,8 +116,8 @@ Output exactly one valid JSON object with these fields:
 Return JSON only. Do not include Markdown, headings, or explanations.`
 
 	req := providers.LlmRequest{
-		Provider: c.LlmProvider,
-		Model:    c.LlmProvider.ActiveModel,
+		Provider: p.LlmProvider,
+		Model:    p.LlmProvider.ActiveModel,
 		Stream:   false,
 		Messages: []providers.LlmMessage{
 			{Role: "system", Content: query},
@@ -146,11 +142,11 @@ Return JSON only. Do not include Markdown, headings, or explanations.`
 	/*
 		we need to check for dupllications, ai bugs, ... every commot errors that can happen, Not only here...
 	*/
-	path := filepath.Join(c.Stage.Path, respContent.Name)
+	path := filepath.Join(p.Stage.Path, respContent.Name)
 	newStage := burrow.New(path)
-	c.SetNext(newStage)
+	p.SetNext(newStage)
 
-	c.Stage.Info = &burrow.StageInfo{Path: c.Stage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: c.LlmProvider.Name, Model: req.Model}}
+	p.Stage.Info = &burrow.StageInfo{Path: p.Stage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}}
 	loggy.Infof("Info generated! <%v...>", respContent)
-	return c.Stage.WriteNewHelperFile(c.Stage.Info)
+	return p.Stage.WriteNewHelperFile(p.Stage.Info)
 }

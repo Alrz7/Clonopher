@@ -2,16 +2,28 @@ package app
 
 import (
 	"clonopher/api"
-	"clonopher/app/classifiers"
 	"clonopher/app/config"
+	"clonopher/app/core"
 	"clonopher/internal"
 	"clonopher/internal/loggy"
 	"context"
 	"flag"
+	"path/filepath"
 )
 
 func Main() {
+	var err error
+	config.Default.App.AppConfigDir, err = internal.SetAppDir()
+	if err != nil {
+		loggy.Fatal(err)
+	}
 	options := SetConfig()
+
+	err = core.ExistingCls.LoadExistingClassifiers(filepath.Join(options.App.AppConfigDir, internal.ClsDirName))
+	if err != nil {
+		loggy.Fatal(err)
+	}
+
 	switch options.App.RunMode {
 	case internal.CliMode, internal.DryRunMode:
 		CliRun(options)
@@ -29,34 +41,28 @@ func Main() {
 }
 
 func SetConfig() *config.Config {
-	var options *config.Config = &config.Config{
-		App: &config.App{},
-		Api: &config.ApiOptions{},
-		Cli: &config.CliOptions{
-			Info: &classifiers.ObjectInfo{},
-		},
-	}
 	// general flags --
 	configPath := flag.String("config", "", "config path")
-	flag.StringVar(&options.App.RunMode, "mode", internal.CliMode, "run mode options: < cli, api >")
-	flag.StringVar(&options.App.ActionPolicy, "policy", internal.PlcNotify, "what should program do after raching the point: options: < copy, move, notify, ask-copy, ask-move >")
+	flag.StringVar(&config.Default.App.RunMode, "mode", internal.CliMode, "run mode options: < cli, api >")
+	flag.StringVar(&config.Default.App.ActionPolicy, "policy", internal.PlcNotify, "what should program do after raching the point: options: < copy, move, notify, ask-copy, ask-move >")
 
 	// api flags --
-	flag.StringVar(&options.App.Env, "env", "development", "Envirement")
-	flag.IntVar(&options.Api.Port, "port", 6520, "api port")
+	flag.StringVar(&config.Default.App.Env, "env", "development", "Envirement")
+	flag.IntVar(&config.Default.Api.Port, "port", 6520, "api port")
 
 	// cli flags --
-	flag.StringVar(&options.Cli.Head, "head", "", "the Head Directory (start point)")
-	flag.StringVar(&options.Cli.Src, "src", "", "file path (source)")
-	// flag.StringVar(&options.Cli.Info.Description, "info", "", "file Info")
+	flag.StringVar(&config.Default.Cli.Head, "head", "", "the Head Directory (start point)")
+	flag.StringVar(&config.Default.Cli.Src, "src", "", "file path (source)")
+	// flag.StringVar(&config.Default.Cli.Info.Description, "info", "", "file Info")
 
 	flag.Parse()
 
 	if *configPath != "" {
-		options.Setup(*configPath)
+		config.Default.Setup(*configPath)
+	} else {
+		config.Default.Setup(filepath.Join(config.Default.App.AppConfigDir, "clonopher.config.yaml"))
 	}
-
 	// ...input validation...
 
-	return options
+	return &config.Default
 }

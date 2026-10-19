@@ -3,11 +3,13 @@ package internal
 type Envelope map[string]any
 
 const (
-	Action             = "action"
-	HelperFileName     = ".clonopher.yaml"
-	ClrCreateNewFolder = "create_new"
-	ClrStayHere        = "stay_here"
-	ClrUncertain       = "uncertain"
+	Action         = "action"
+	HelperFileName = ".clonopher.yaml"
+	ActMove        = "ACT_MOVE"
+	ActCreateNew   = "ACT_CREATE_NEW"
+	ActStay   = "ACT_STAY_HERE"
+	ACTUncertain  = "ACT_UNCERTAIN"
+	ACTUndefined  = "ACT_UNDEFINED"
 )
 
 const (

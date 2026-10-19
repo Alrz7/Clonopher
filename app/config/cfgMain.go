@@ -10,6 +10,11 @@ import (
 )
 
 var K = koanf.New(".")
+var Default = Config{
+	App: &App{},
+	Api: &ApiOptions{},
+	Cli: &CliOptions{},
+}
 
 func (c *Config) Setup(configPath string) {
 	// configPath := filepath.Join(configDir, "marble.yaml")

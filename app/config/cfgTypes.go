@@ -1,7 +1,6 @@
 package config
 
 import (
-	"clonopher/app/classifiers"
 	"clonopher/app/providers"
 	"clonopher/internal/loggy"
 )
@@ -15,9 +14,10 @@ type Config struct {
 }
 
 type App struct {
-	RunMode      string `koanf:"-"`
+	AppConfigDir string `koanf:"config_dir"`
 	Version      string `koanf:"version"`
 	Env          string `koanf:"env"`
+	RunMode      string `koanf:"-"`
 	ActionPolicy string `koanf:"-"`
 }
 
@@ -31,9 +31,9 @@ type ApiOptions struct {
 }
 
 type CliOptions struct {
-	Head string                  `koanf:"head"`
-	Src  string                  `koanf:"src"`
-	Info *classifiers.ObjectInfo `koanf:"info"`
+	Head string  `koanf:"head"`
+	Src  string  `koanf:"src"`
+	Info *string `koanf:"info"`
 }
 
 func (c *Config) GetActiveJevProvider() *providers.Provider {
