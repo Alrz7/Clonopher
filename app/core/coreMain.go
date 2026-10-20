@@ -9,11 +9,10 @@ import (
 	"time"
 )
 
-func (p *Payload) Serve() error {
-
+func (p *Payload) Serve() (string, error) {
 	releventClassifiers, err := p.SelectRelevantClassifiers(&ExistingCls)
 	if err != nil {
-		return err
+		return "", err
 	}
 	run := func() (bool, error) {
 		err = p.Stage.Explore()
@@ -42,24 +41,24 @@ func (p *Payload) Serve() error {
 
 	reserve, err := run()
 	if err != nil {
-		return err
+		return "", err
 	}
 	for reserve {
 		// loggy.Info("======== reserve =========")
 		// time.Sleep(4 * time.Second)
 		reserve, err = run()
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
-	return nil
+	return p.Stage.Path, nil
 }
 
 func (p *Payload) Classify(req *providers.JevRequest, classifiers *releventCls) (*Actions, error) {
 	*classifiers = append(*classifiers, struct {
 		Cls   *CustomCls
 		Power float64
-	}{Cls: &ClsMain, Power: 0.6})
+	}{Cls: &ClsDefault, Power: 0.6})
 
 	// loggy.Fatal(classifiers)
 

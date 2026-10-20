@@ -156,6 +156,8 @@ func (a *ACTStayHere) Run(p *Payload) error {
 			return err
 		}
 		loggy.Info("Lets Drop it here!", "action", "move", "final path", finalPath)
+	case internal.PlcNone:
+		return nil
 	default:
 		finalPath := filepath.Join(p.Stage.Path, filepath.Base(p.Src))
 		loggy.Info("Lets Drop it here!", "action", "notification", "final path", finalPath)

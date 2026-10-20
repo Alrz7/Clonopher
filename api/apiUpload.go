@@ -1,6 +1,10 @@
 package api
 
 import (
+	"clonopher/app/config"
+	"clonopher/app/core"
+	"clonopher/internal"
+	"clonopher/internal/loggy"
 	"encoding/json"
 	"errors"
 	"io"
@@ -9,6 +13,48 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Request) {
+	var entry struct {
+		FileName    string `json:"fileName"`
+		Head        string `json:"head"`
+		Content     string `json:"content"`
+		Description string `json:"description"`
+	}
+	err := api.readJson(w, r, &entry)
+	if err != nil {
+		api.badRequestResponse(w, r, err)
+		return
+	}
+	if entry.Head == "" {
+		entry.Head = config.Default.App.Head
+	}
+
+	payload := core.New(&config.Default, entry.FileName, entry.Head, "", entry.Description, internal.PlcNone, internal.ApiMode)
+	dst, err := payload.Serve()
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+	err = payload.Stage.Submit()
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+
+	path := filepath.Join(dst, entry.FileName)
+
+	err = os.WriteFile(path, []byte(entry.Content), 0644)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = api.writeJSON(w, http.StatusOK, internal.Envelope{"message": "payload served!", "address": path}, nil)
+	if err != nil {
+		loggy.Error(err)
+	}
+}
 
 const (
 	maxUploadSize      int64 = 100 << 20 // 100 MiB

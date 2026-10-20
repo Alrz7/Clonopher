@@ -13,14 +13,14 @@ var K = koanf.New(".")
 var Default = Config{
 	App: &App{},
 	Api: &ApiOptions{},
-	Cli: &CliOptions{},
 }
 
 func (c *Config) Setup(configPath string) {
 	// configPath := filepath.Join(configDir, "marble.yaml")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		loggy.Fatal(err)
+		// loggy.Fatal(err)
+		return
 	}
 
 	err := K.Load(

@@ -11,20 +11,20 @@ import (
 	"slices"
 )
 
-func (r *JevRequest) Send(ctx context.Context) (*JevResponse, error) {
-	err := DoesSupportModel(r.Provider.Url, r.Provider.Models, string(r.Model))
+func (req *JevRequest) Send(ctx context.Context) (*JevResponse, error) {
+	err := DoesSupportModel(req.Provider.Url, req.Provider.Models, string(req.Model))
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := json.Marshal(r)
+	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 	httpReq, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		r.Provider.Url,
+		req.Provider.Url,
 		bytes.NewReader(b),
 	)
 	if err != nil {
@@ -32,15 +32,21 @@ func (r *JevRequest) Send(ctx context.Context) (*JevResponse, error) {
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if r.Provider.ApiKey != "" {
-		httpReq.Header.Set("Authorization", r.Provider.ApiKey)
+	if req.Provider.ApiKey != "" {
+		httpReq.Header.Set("Authorization", req.Provider.ApiKey)
 	}
+
+	// loggy.Info("req:")
+	// loggy.Info(req)
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	// loggy.Info("resp:")
+	// loggy.Info(resp)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -74,8 +74,8 @@ func (cls *CustomCls) Resolve(p *Payload, ac *Actions, resp *providers.JevRespon
 
 //----- Default -----
 
-var ClsMain = CustomCls{
-	Name: "Main",
+var ClsDefault = CustomCls{
+	Name: "Default",
 	Type: "choice",
 	Instructions: `Choose the best destination for the target file using its
 name, description, and the available directory context.

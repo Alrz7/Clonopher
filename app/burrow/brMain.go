@@ -21,11 +21,11 @@ import (
 )
 
 type Stage struct {
-	Mu       *sync.Mutex
-	Path     string            `yaml:"path"`
-	Roots    map[string]*Stage `yaml:"roots"`
-	Files    []string          `yaml:"existingFiles"`
-	Info     *StageInfo        `yaml:"info"`
+	Mu    *sync.Mutex
+	Path  string            `yaml:"path"`
+	Roots map[string]*Stage `yaml:"roots"`
+	Files []string          `yaml:"existingFiles"`
+	Info  *StageInfo        `yaml:"info"`
 }
 
 type InfoProvider struct {
@@ -96,7 +96,8 @@ func (s *Stage) ReadHelperFile() error {
 		if err != nil {
 			return err
 		}
-		if inf.Path != s.Path {
+
+		if filepath.Clean(inf.Path) != filepath.Clean(s.Path) {
 			loggy.Warnf("helper file's path <%v> \n does NOT match the stage its placed in <%v> \n", inf.Path, s.Path)
 		}
 		s.SetInfo(&inf)

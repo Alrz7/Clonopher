@@ -8,17 +8,17 @@ import (
 type Config struct {
 	App          *App             `koanf:"app"`
 	Api          *ApiOptions      `koanf:"api"`
-	Cli          *CliOptions      `koanf:"cli"`
 	JevProviders *ProviderOptions `koanf:"jev_providers"`
 	LlmProviders *ProviderOptions `koanf:"llm_providers"`
 }
 
 type App struct {
+	Head         string `koanf:"default_head"`
 	AppConfigDir string `koanf:"config_dir"`
 	Version      string `koanf:"version"`
 	Env          string `koanf:"env"`
-	RunMode      string `koanf:"-"`
-	ActionPolicy string `koanf:"-"`
+	RunMode      string `koanf:"run_mode"`
+	ActionPolicy string `koanf:"action_policy"`
 }
 
 type ProviderOptions struct {
@@ -28,12 +28,6 @@ type ProviderOptions struct {
 }
 type ApiOptions struct {
 	Port int `koanf:"port"`
-}
-
-type CliOptions struct {
-	Head string  `koanf:"head"`
-	Src  string  `koanf:"src"`
-	Info *string `koanf:"info"`
 }
 
 func (c *Config) GetActiveJevProvider() *providers.Provider {

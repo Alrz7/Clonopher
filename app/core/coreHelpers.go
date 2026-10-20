@@ -55,7 +55,7 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 	}
 
 	for clsTitle, cls := range c.Classifiers {
-		if cls.Name == ClsMain.Name {
+		if cls.Name == ClsDefault.Name {
 			continue
 		}
 		req.Questions[clsTitle] = providers.JevQuestion{
@@ -70,32 +70,38 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 			},
 		}
 	}
-	sctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
-	defer cancel()
-	resp, err := req.Send(sctx)
-	if err != nil {
-		return nil, err
-	}
 
 	var relvs releventCls
-	for clsTitle, res := range resp.Answers {
-		cls, ok := c.Classifiers[clsTitle]
-		if !ok || cls == nil {
-			return nil, loggy.Sayf("classifier '%v' was not defined", clsTitle)
+
+	if len(req.Questions) > 0 {
+
+		sctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+		defer cancel()
+		resp, err := req.Send(sctx)
+		if err != nil {
+			return nil, err
 		}
-		if cls.Name == ClsMain.Name {
-			continue
+
+		for clsTitle, res := range resp.Answers {
+			cls, ok := c.Classifiers[clsTitle]
+			if !ok || cls == nil {
+				return nil, loggy.Sayf("classifier '%v' was not defined", clsTitle)
+			}
+			if cls.Name == ClsDefault.Name {
+				continue
+			}
+			if res.Noul == nil {
+				return nil, loggy.Sayf("nil answer for classifier: '%v'", clsTitle)
+			}
+			// loggy.Info(*res.Noul, "cls", clsTitle)
+			if *res.Noul < 0.5 {
+				continue
+			}
+			relvs = append(relvs, struct {
+				Cls   *CustomCls
+				Power float64
+			}{Cls: cls, Power: *res.Noul})
 		}
-		if res.Noul == nil {
-			return nil, loggy.Sayf("nil answer for classifier: '%v'", clsTitle)
-		}
-		if *res.Noul < 0.65 {
-			continue
-		}
-		relvs = append(relvs, struct {
-			Cls   *CustomCls
-			Power float64
-		}{Cls: cls, Power: *res.Noul})
 	}
 
 	if len(relvs) == 0 {
@@ -104,11 +110,11 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 			Power float64
 		}{Power: 1.0}
 
-		customDefault, ok := c.Classifiers[ClsMain.Name]
+		customDefault, ok := c.Classifiers[ClsDefault.Name]
 		if ok {
 			fallback.Cls = customDefault
 		} else {
-			fallback.Cls = &ClsMain
+			fallback.Cls = &ClsDefault
 		}
 		relvs = append(relvs, fallback)
 	}

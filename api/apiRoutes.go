@@ -12,6 +12,7 @@ func (api *ApiConfig) routes() *httprouter.Router {
 	router := httprouter.New()
 
 	router.HandlerFunc(http.MethodGet, "/", api.handleHome)
+	router.HandlerFunc(http.MethodPost, "/payload", api.HandleUploadTextFile)
 	return router
 }
 

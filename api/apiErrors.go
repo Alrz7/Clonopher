@@ -8,7 +8,7 @@ import (
 
 func (api *ApiConfig) errorResponse(w http.ResponseWriter, r *http.Request, status int, AppErr error) {
 	loggy.Error(AppErr)
-	env := internal.Envelope{"error": AppErr}
+	env := internal.Envelope{"error": AppErr.Error()}
 	err := api.writeJSON(w, status, env, nil)
 	if err != nil {
 		w.WriteHeader(500)

@@ -7,9 +7,9 @@ const (
 	HelperFileName = ".clonopher.yaml"
 	ActMove        = "ACT_MOVE"
 	ActCreateNew   = "ACT_CREATE_NEW"
-	ActStay   = "ACT_STAY_HERE"
-	ACTUncertain  = "ACT_UNCERTAIN"
-	ACTUndefined  = "ACT_UNDEFINED"
+	ActStay        = "ACT_STAY_HERE"
+	ACTUncertain   = "ACT_UNCERTAIN"
+	ACTUndefined   = "ACT_UNDEFINED"
 )
 
 const (
@@ -19,6 +19,7 @@ const (
 	DryRunMode        = "dry"
 	// action policy --
 	PlcNotify  = "notify"
+	PlcNone    = "none"
 	PlcCopy    = "copy"
 	PlcMove    = "move"
 	PlcAskCopy = "ask-copy"

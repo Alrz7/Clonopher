@@ -5,7 +5,6 @@ import (
 	"clonopher/app/config"
 	"clonopher/app/providers"
 	"clonopher/internal"
-	"path/filepath"
 )
 
 // payload is a high value load that is carried by a worker;
@@ -64,25 +63,19 @@ var ExistingCls = ClsConfig{
 	Classifiers: map[string]*CustomCls{},
 }
 
-func New(c *config.Config) *Payload {
+func New(c *config.Config, name, head, src, desc, policy, runMode string) *Payload {
+	// need to do the validation here
 	Payload := Payload{
-		Head:        filepath.Base(c.Cli.Head),
-		Name:        filepath.Base(c.Cli.Src),
-		Src:         c.Cli.Src,
+		Head:        head,
+		Name:        name,
+		Src:         src,
 		Info:        &ObjectInfo{},
-		Stage:       burrow.New(c.Cli.Head),
+		Stage:       burrow.New(head),
 		JevProvider: c.GetActiveJevProvider(),
 		LlmProvider: c.GetActiveLlmProvider(),
-		// Actions: &Actions{
-		// 	Current: &ACTUnDefined{
-		// 		ShouldReServe: true,
-		// 	},
-		// 	PerType: map[string]float64{},
-		// 	All:     map[*Action]float64{},
-		// },
 		Options: &Options{
-			ActionPolicy: c.App.ActionPolicy,
-			RunMode:      c.App.RunMode,
+			ActionPolicy: policy,
+			RunMode:      runMode,
 		},
 	}
 	return &Payload
