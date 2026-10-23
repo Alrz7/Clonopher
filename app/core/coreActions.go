@@ -73,9 +73,10 @@ func (a *ActMove) Run(p *Payload) error {
 	defer p.Stage.Mu.RUnlock()
 	options := slices.Collect(maps.Keys(p.Stage.Roots))
 	slices.Sort(options)
-	loggy.Info("options: ", "options", options)
-	dstName := filepath.Base(a.Dst.Path)
-	loggy.Info("moving to --> " + dstName)
+	// loggy.Info("options: ", "options", options)
+	filepath.Base(a.Dst.Path)
+	// dstName := filepath.Base(a.Dst.Path)
+	// loggy.Info("moving to --> " + dstName)
 	p.SetNext(a.Dst)
 	return nil
 }
@@ -90,7 +91,7 @@ type ACTUnDefined struct {
 }
 
 func (a *ACTUnDefined) Run(p *Payload) error {
-	loggy.Info("action Undefined")
+	// loggy.Info("action Undefined")
 	return nil
 }
 func (a *ACTUnDefined) ReServe() bool {
@@ -107,7 +108,7 @@ type ACTUncertain struct {
 }
 
 func (a *ACTUncertain) Run(p *Payload) error {
-	loggy.Info("im realy uncertain about this!, ngl")
+	// loggy.Info("im realy uncertain about this!, ngl")
 	return nil
 }
 func (a *ACTUncertain) ReServe() bool {
@@ -128,7 +129,7 @@ func (a *ACTCreateNewFolder) Type() string {
 }
 
 func (a *ACTCreateNewFolder) Run(p *Payload) error {
-	loggy.Info("creating new Folder")
+	// loggy.Info("creating new Folder")
 	return p.NewStageWithInfo()
 }
 func (a *ACTCreateNewFolder) ReServe() bool {
@@ -147,22 +148,25 @@ func (a *ACTStayHere) Type() string {
 func (a *ACTStayHere) Run(p *Payload) error {
 	switch p.Options.ActionPolicy {
 	case internal.PlcCopy:
-		finalPath, err := p.Stage.CopyFileHere(p.Src) // returns final path too
+		_, err := p.Stage.CopyFileHere(p.Src) // returns final path too
+		// finalPath, err := p.Stage.CopyFileHere(p.Src) // returns final path too
 		if err != nil {
 			return err
 		}
-		loggy.Info("Lets Drop it here!", "action", "copy", "final path", finalPath)
+		// loggy.Info("Lets Drop it here!", "action", "copy", "final path", finalPath)
 	case internal.PlcMove:
-		finalPath, err := p.Stage.DropFileHere(p.Src) // returns final path too
+		_, err := p.Stage.DropFileHere(p.Src) // returns final path too
+		// finalPath, err := p.Stage.DropFileHere(p.Src) // returns final path too
 		if err != nil {
 			return err
 		}
-		loggy.Info("Lets Drop it here!", "action", "move", "final path", finalPath)
+		// loggy.Info("Lets Drop it here!", "action", "move", "final path", finalPath)
 	case internal.PlcNone:
 		return nil
 	default:
-		finalPath := filepath.Join(p.Stage.Path, filepath.Base(p.Src))
-		loggy.Info("Lets Drop it here!", "action", "notification", "final path", finalPath)
+		filepath.Join(p.Stage.Path, filepath.Base(p.Src))
+		// finalPath := filepath.Join(p.Stage.Path, filepath.Base(p.Src))
+		// loggy.Info("Lets Drop it here!", "action", "notification", "final path", finalPath)
 	}
 	return nil
 }

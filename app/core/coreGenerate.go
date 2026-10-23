@@ -4,7 +4,6 @@ import (
 	"clonopher/app/burrow"
 	"clonopher/app/providers"
 	"clonopher/internal/helpers"
-	"clonopher/internal/loggy"
 	"context"
 	"encoding/json"
 	"errors"
@@ -65,7 +64,9 @@ func (p *Payload) NewStageWithInfo() error {
 	// } each call has its own parameter like diferent file infos and data; so each call creates a new subStage on the parrent stage
 	// therefor we may not need a mutex for this.
 
-	loggy.Info("generating Info...")
+	p.Stage.Mu.RLock()
+	oldPath := p.Stage.Path
+	// loggy.Info("generating Info...")
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `file-name: %v`, Options: []any{p.Name}},
 		&helpers.InfoOption{Info: `file-info: %v`, Options: []any{p.Info.Render()}},
@@ -73,6 +74,7 @@ func (p *Payload) NewStageWithInfo() error {
 		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(p.Stage.Roots))}},
 		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{p.Stage.Files}},
 	}.ConcatIfExists()
+	p.Stage.Mu.RUnlock()
 
 	query := `You are Clonopher's directory metadata composer.
 
@@ -150,11 +152,11 @@ Return JSON only. Do not include Markdown, headings, or explanations.`
 	/*
 		we need to check for dupllications, ai bugs, ... every commot errors that can happen, Not only here...
 	*/
-	newPath := filepath.Join(p.Stage.Path, respContent.Name)
+	newPath := filepath.Join(oldPath, respContent.Name)
 	newStage := burrow.New(newPath)
 
 	newStage.SetInfo(&burrow.StageInfo{Path: newStage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}})
-	loggy.Infof("Info generated! for %v <%v...>", p.Name, respContent)
+	// loggy.Infof("Info generated! for %v <%v...>", p.Name, respContent)
 	err = newStage.WriteNewHelperFile(newStage.Info)
 	if err != nil {
 		return err

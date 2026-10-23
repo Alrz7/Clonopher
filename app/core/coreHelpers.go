@@ -127,8 +127,8 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 }
 
 func (p *Payload) GetState() string {
-	p.Stage.InfMu.RLock()
 	p.Stage.Mu.RLock()
+	p.Stage.InfMu.RLock()
 	defer func() {
 		p.Stage.Mu.RUnlock()
 		p.Stage.InfMu.RUnlock()
@@ -149,6 +149,6 @@ func (p *Payload) GetState() string {
 }
 
 func (p *Payload) SetNext(next *burrow.Stage) {
-	p.Road = append(p.Road, p.Stage)
+	p.ShiftStage(next) // this saves last record so it should be called first!
 	p.Stage = next
 }

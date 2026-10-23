@@ -10,79 +10,87 @@ import (
 )
 
 func (p *Payload) Serve() (string, error) {
+	// loggy.Info("-start-")
 	var releventClassifiers *releventCls
-	// iteration := 0
+
+	done := make(chan struct{})
+	loggy.Info(p.Options.RunMode)
+	tui, err := StartPayloadTUI(p.Options.RunMode == internal.CliMode, done)
+	if err != nil {
+		p.SetState(PayloadStateFailed)
+		return "", err
+	}
 
 	run := func() (bool, error) {
-		// iteration++
-		// if iteration >= 10 {
-		// 	return false, loggy.Sayf("unusual CLS loop! for %v", p.Name)
-		// }
-		// loggy.Info(
-		// 	"serve iteration started",
-		// 	"file", p.Name,
-		// 	"iteration", iteration,
-		// 	"stage", p.Stage.Path,
-		// )
+		p.AddIteration()
 
-		err := p.Stage.Explore()
-		if err != nil {
-			return false, err
+		if !p.Stage.Explored.Load() {
+			p.SetState(PayloadStateExploring)
+			err := p.Stage.Explore()
+			if err != nil {
+				return false, err
+			}
 		}
 
-		err = p.Stage.GuessStageInfo(p.LlmProvider)
-		if err != nil {
-			return false, err
+		p.Stage.Mu.RLock()
+		if p.Stage.Info == nil {
+			p.Stage.Mu.RUnlock()
+			p.SetState(PayloadStateInferring)
+			err := p.Stage.InferStageInfo(p.LlmProvider)
+			if err != nil {
+				return false, err
+			}
+		} else {
+			p.Stage.Mu.RUnlock()
 		}
 
 		req := p.NewRequest()
 
+		var err error
 		if releventClassifiers == nil {
+			p.SetState(PayloadStateSelectingClassifiers)
 			releventClassifiers, err = p.SelectRelevantClassifiers(&ExistingCls)
 			if err != nil {
 				return false, err
 			}
 		}
+
+		p.SetState(PayloadStateClassifying)
 		actions, err := p.Classify(req, releventClassifiers)
 		if err != nil || actions == nil {
 			return false, err
 		}
+
+		p.SetState(PayloadStateModifying)
 		err = actions.Current.Run(p)
 		if err != nil {
 			return false, err
 		}
-		// action := actions.Current.Type()
-		// stageAfter := p.Stage.Path
-		// reserve := actions.Current.ReServe()
-		// myRoad := []string{}
-		// for _, st := range p.Road {
-		// 	myRoad = append(myRoad, st.Path)
-		// }
-
-		// loggy.Info(
-		// 	"action completed",
-		// 	"file", p.Name,
-		// 	"iteration", iteration,
-		// 	"action", action,
-		// 	"reServe", reserve,
-		// 	"stage", stageAfter,
-		// 	"road", p.Road,
-		// )
+		p.ShiftAction(actions.Current.Type())
 		return actions.Current.ReServe(), nil
 	}
 
 	reserve, err := run()
 	if err != nil {
+		p.SetState(PayloadStateFailed)
 		return "", err
 	}
 	for reserve {
-		// loggy.Info("======== reserve =========")
-		// time.Sleep(4 * time.Second)
 		reserve, err = run()
 		if err != nil {
+			p.SetState(PayloadStateFailed)
 			return "", err
 		}
 	}
+
+	p.SetState(PayloadStateCompleted)
+
+	close(done)
+	if err := tui.Wait(); err != nil {
+		p.SetState(PayloadStateFailed)
+		return "", err
+	}
+
 	return p.Stage.Path, nil
 }
 

@@ -5,11 +5,14 @@ import (
 	"clonopher/app/config"
 	"clonopher/app/providers"
 	"clonopher/internal"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 // payload is a high value load that is carried by a worker;
 // each one has its own file, bin, desctiption, etc...
 type Payload struct {
+	Id          string
 	Name        string
 	Src         string
 	Head        string
@@ -17,9 +20,7 @@ type Payload struct {
 	Info        *ObjectInfo
 	JevProvider *providers.Provider
 	LlmProvider *providers.Provider
-	// Actions     *Actions
-	Road    []*burrow.Stage
-	Options *Options
+	Options     *Options
 }
 type Classifier interface {
 	Apply(p *Payload, req *providers.JevRequest) error
@@ -73,7 +74,12 @@ func New(c *config.Config, name, head, src, desc, policy, runMode string) (*Payl
 			return nil, err
 		}
 	}
+
+	sum := sha256.Sum256([]byte(name + head + src + policy + runMode))
+	id := hex.EncodeToString(sum[:])
+
 	Payload := Payload{
+		Id:          id,
 		Head:        head,
 		Name:        name,
 		Src:         src,
@@ -86,6 +92,8 @@ func New(c *config.Config, name, head, src, desc, policy, runMode string) (*Payl
 			RunMode:      runMode,
 		},
 	}
+	Stats.AddNew(id, name, stage)
+
 	return &Payload, nil
 }
 

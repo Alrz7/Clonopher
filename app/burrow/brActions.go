@@ -91,26 +91,21 @@ func (s *Stage) readHelperFileLocked() error {
 	return nil
 }
 
-func (s *Stage) GuessStageInfo(provider *providers.Provider) error {
-	lockStage := func() {
-		s.Mu.RLock()
-		s.InfMu.Lock()
-	}
-	unlockStage := func() {
-		s.Mu.RUnlock()
-		s.InfMu.Unlock()
-	}
+func (s *Stage) InferStageInfo(provider *providers.Provider) error {
+	s.Mu.RLock()
 	if s.Info != nil {
+		s.Mu.RUnlock()
 		return nil
 	}
+
 	loggy.Info("generating Info...")
-	lockStage()
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `dir-path: %v`, Options: []any{s.Path}},
 		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(s.Roots))}},
 		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{s.Files}},
 	}.ConcatIfExists()
-	unlockStage()
+
+	s.Mu.RUnlock()
 
 	query := `You are Clonopher's directory metadata generator.
 
@@ -149,9 +144,7 @@ Rules:
 		return err
 	}
 
-	lockStage()
-	defer unlockStage()
-
+	s.Mu.RLock()
 	sum := sha256.Sum256([]byte(s.Path + time.Now().String()))
 	id := hex.EncodeToString(sum[:])
 
@@ -160,25 +153,30 @@ Rules:
 		UpdatedAt: time.Now(),
 		Brief:     respContent,
 		Modifier:  &InfoProvider{Provider: provider.Name, Model: req.Model}, StageID: id}
+
+	// loggy.Infof("Info generated! for %v <%v...>", s.Path, respContent)
+	err = s.WriteNewHelperFile(s.Info)
+	if err != nil {
+		return err
+	}
+	s.Mu.RUnlock()
 	s.SetInfo(&inf)
-
-	loggy.Infof("Info generated! for %v <%v...>", s.Path, respContent)
-	return s.WriteNewHelperFile(s.Info)
-}
-
-func (s *Stage) UpdateHelperFile() error {
-	b, err := yaml.Marshal(s.Info)
-	if err != nil {
-		return err
-	}
-	header := []byte("# This file is Managed by Clonopher. Manual edits may be overwritten.\n\n")
-	content := append(header, b...)
-	err = os.WriteFile(filepath.Join(s.Path, internal.HelperFileName), content, 0644)
-	if err != nil {
-		return err
-	}
 	return nil
 }
+
+// func (s *Stage) UpdateHelperFile() error {
+// 	b, err := yaml.Marshal(s.Info)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	header := []byte("# This file is Managed by Clonopher. Manual edits may be overwritten.\n\n")
+// 	content := append(header, b...)
+// 	err = os.WriteFile(filepath.Join(s.Path, internal.HelperFileName), content, 0644)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 func (s *Stage) WriteNewHelperFile(inf *StageInfo) error {
 	b, err := yaml.Marshal(inf)

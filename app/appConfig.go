@@ -63,7 +63,7 @@ func SetConfig() ([]*core.Payload, bool, error) {
 			// 	config.Default.App.Head = head
 			// }
 
-			payloads = SetPayload(srcs, descriptions, head)
+			payloads = SetPayload(srcs, descriptions, head, runMode,policy)
 			if len(payloads) > 0 {
 				config.Default.App.RunMode = internal.CliMode
 			}
@@ -122,7 +122,7 @@ func SetConfig() ([]*core.Payload, bool, error) {
 	return payloads, true, nil
 }
 
-func SetPayload(srcs string, descriptions string, head string) []*core.Payload {
+func SetPayload(srcs, descriptions, head, runMode, actionPolicy string) []*core.Payload {
 	if srcs == "" {
 		return nil
 	}
@@ -137,8 +137,8 @@ func SetPayload(srcs string, descriptions string, head string) []*core.Payload {
 		p, err := core.New(&config.Default, name,
 			head,
 			srclist[i], descList[i],
-			config.Default.App.ActionPolicy,
-			config.Default.App.RunMode)
+			actionPolicy,
+			internal.CliMode)
 		if err != nil {
 			loggy.Fatal(err)
 		}
