@@ -23,7 +23,7 @@ type Actions struct {
 }
 
 func (a *Actions) Set(action Action, power float64) {
-	a.PerType[action.Type()] = +power
+	a.PerType[action.Type()] += power
 	a.All[&action] = power
 }
 
@@ -69,6 +69,8 @@ func (a *ActMove) Type() string {
 }
 
 func (a *ActMove) Run(p *Payload) error {
+	p.Stage.Mu.RLock()
+	defer p.Stage.Mu.RUnlock()
 	options := slices.Collect(maps.Keys(p.Stage.Roots))
 	slices.Sort(options)
 	loggy.Info("options: ", "options", options)

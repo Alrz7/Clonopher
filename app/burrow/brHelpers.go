@@ -63,32 +63,61 @@ func ShouldSkip(dirname string) bool {
 
 // in-memmory helpers
 
-func (s *Stage) SetRoots(roots map[string]*Stage) {
+func (s *Stage) setRoots(roots map[string]*Stage) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	s.setRootsLocked(roots)
+}
+
+// *-Locked helpers require the caller to hold s.Mu.
+
+func (s *Stage) setRootsLocked(roots map[string]*Stage) {
 	s.Roots = roots
 }
 
 func (s *Stage) AddRoot(rootName string, root *Stage) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	s.addRootLocked(rootName, root)
+}
+
+func (s *Stage) addRootLocked(rootName string, root *Stage) {
+	// TODO: If the root already exists, merge both StageInfo values
+	// through the LLM instead of blindly replacing the existing Stage.
 	s.Roots[rootName] = root
 }
 
-func (s *Stage) SetFiles(files []string) {
+func (s *Stage) setFiles(files []string) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	s.setFilesLocked(files)
+}
+
+func (s *Stage) setFilesLocked(files []string) {
 	s.Files = files
 }
 
-func (s *Stage) AddFile(file string) {
+func (s *Stage) addFile(file string) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	s.addFileLocked(file)
+}
+
+func (s *Stage) addFileLocked(file string) {
 	s.Files = append(s.Files, file)
 }
 
 func (s *Stage) SetInfo(info *StageInfo) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
+
+	s.setInfoLocked(info)
+}
+
+func (s *Stage) setInfoLocked(info *StageInfo) {
 	s.Info = info
 }

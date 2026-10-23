@@ -59,11 +59,11 @@ func SetConfig() ([]*core.Payload, bool, error) {
 			if flags.Changed("port") {
 				config.Default.Api.Port = port
 			}
-			if flags.Changed("head") {
-				config.Default.App.Head = head
-			}
+			// if flags.Changed("head") {
+			// 	config.Default.App.Head = head
+			// }
 
-			payloads = SetPayload(srcs, descriptions)
+			payloads = SetPayload(srcs, descriptions, head)
 			if len(payloads) > 0 {
 				config.Default.App.RunMode = internal.CliMode
 			}
@@ -122,7 +122,7 @@ func SetConfig() ([]*core.Payload, bool, error) {
 	return payloads, true, nil
 }
 
-func SetPayload(srcs string, descriptions string) []*core.Payload {
+func SetPayload(srcs string, descriptions string, head string) []*core.Payload {
 	if srcs == "" {
 		return nil
 	}
@@ -134,11 +134,14 @@ func SetPayload(srcs string, descriptions string) []*core.Payload {
 	}
 	for i := range len(srclist) {
 		name := filepath.Base(srclist[i])
-		p := core.New(&config.Default, name,
-			config.Default.App.Head,
+		p, err := core.New(&config.Default, name,
+			head,
 			srclist[i], descList[i],
 			config.Default.App.ActionPolicy,
 			config.Default.App.RunMode)
+		if err != nil {
+			loggy.Fatal(err)
+		}
 		if p != nil {
 			res = append(res, p)
 		}

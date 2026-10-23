@@ -13,12 +13,12 @@ type Config struct {
 }
 
 type App struct {
-	Head         string `koanf:"default_head"`
-	AppConfigDir string `koanf:"config_dir"`
-	Version      string `koanf:"version"`
-	Env          string `koanf:"env"`
-	RunMode      string `koanf:"run_mode"`
-	ActionPolicy string `koanf:"action_policy"`
+	Heads        map[string]string `koanf:"heads"`
+	AppConfigDir string            `koanf:"config_dir"`
+	Version      string            `koanf:"version"`
+	Env          string            `koanf:"env"`
+	RunMode      string            `koanf:"run_mode"`
+	ActionPolicy string            `koanf:"action_policy"`
 }
 
 type ProviderOptions struct {

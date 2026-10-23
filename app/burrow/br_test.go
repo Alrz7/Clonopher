@@ -1,7 +1,6 @@
 package burrow
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -14,5 +13,5 @@ func TestMain(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	fmt.Println(b)
+	// fmt.Println(b)
 }

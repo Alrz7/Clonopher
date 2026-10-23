@@ -11,7 +11,7 @@ import (
 
 var K = koanf.New(".")
 var Default = Config{
-	App: &App{},
+	App: &App{Heads: map[string]string{}},
 	Api: &ApiOptions{},
 }
 

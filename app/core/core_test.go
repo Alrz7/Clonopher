@@ -1,5 +1,11 @@
 package core
 
+import (
+	"clonopher/internal"
+	"path/filepath"
+	"testing"
+)
+
 // func TestServePayload(t *testing.T) {
 // 	ollamaTev := &Options{
 // 		Provider: &providers.Provider{
@@ -22,3 +28,16 @@ package core
 // 		t.Log(err)
 // 	}
 // }
+
+func TestLoadExistingClss(t *testing.T) {
+	cnf := ClsConfig{Classifiers: map[string]*CustomCls{}}
+	appdir, err := internal.SetAppDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = cnf.LoadExistingClassifiers(filepath.Join(appdir, internal.ClsDirName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cnf.Classifiers)
+}

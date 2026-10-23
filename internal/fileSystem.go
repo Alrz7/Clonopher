@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"clonopher/internal/loggy"
 	"os"
 	"path/filepath"
 )
@@ -25,4 +26,20 @@ func SetAppDir() (string, error) {
 	}
 
 	return configDir, nil
+}
+
+func IsDir(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, loggy.Sayf("invalid path %q: %w", path, err)
+	}
+	return info.IsDir(), nil
+}
+
+func IsFile(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, loggy.Sayf("invalid path %q: %w", path, err)
+	}
+	return info.Mode().IsRegular(), nil
 }

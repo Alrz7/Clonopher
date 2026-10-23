@@ -20,17 +20,19 @@ func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Reques
 		Head        string `json:"head"`
 		Content     string `json:"content"`
 		Description string `json:"description"`
+		Policy      string `json:"policy"`
 	}
 	err := api.readJson(w, r, &entry)
 	if err != nil {
 		api.badRequestResponse(w, r, err)
 		return
 	}
-	if entry.Head == "" {
-		entry.Head = config.Default.App.Head
-	}
 
-	payload := core.New(&config.Default, entry.FileName, entry.Head, "", entry.Description, internal.PlcNone, internal.ApiMode)
+	payload, err := core.New(&config.Default, entry.FileName, entry.Head, "", entry.Description, internal.PlcNone, internal.ApiMode)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
 	dst, err := payload.Serve()
 	if err != nil {
 		api.serverErrorResponse(w, r, err)

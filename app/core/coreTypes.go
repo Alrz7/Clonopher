@@ -35,7 +35,7 @@ type releventCls []struct {
 }
 
 type CustomCls struct {
-	Name         string                  `yaml:"name"` // its the cls.title thats important, not the key/title inside map
+	Name         string                  `yaml:"-"` // its the cls.title thats important, not the key/title inside map
 	Type         providers.JevQaTypes    `yaml:"type"`
 	Instructions string                  `yaml:"instructions"`
 	Brief        string                  `yaml:"brief"`
@@ -63,14 +63,22 @@ var ExistingCls = ClsConfig{
 	Classifiers: map[string]*CustomCls{},
 }
 
-func New(c *config.Config, name, head, src, desc, policy, runMode string) *Payload {
+func New(c *config.Config, name, head, src, desc, policy, runMode string) (*Payload, error) {
 	// need to do the validation here
+	stage, ok := burrow.GetFromGlobals(head)
+	if !ok {
+		var err error
+		stage, err = burrow.NewGlobal("", head)
+		if err != nil {
+			return nil, err
+		}
+	}
 	Payload := Payload{
 		Head:        head,
 		Name:        name,
 		Src:         src,
 		Info:        &ObjectInfo{},
-		Stage:       burrow.New(head),
+		Stage:       stage,
 		JevProvider: c.GetActiveJevProvider(),
 		LlmProvider: c.GetActiveLlmProvider(),
 		Options: &Options{
@@ -78,7 +86,7 @@ func New(c *config.Config, name, head, src, desc, policy, runMode string) *Paylo
 			RunMode:      runMode,
 		},
 	}
-	return &Payload
+	return &Payload, nil
 }
 
 func (p *Payload) NewRequest() *providers.JevRequest {

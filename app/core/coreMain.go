@@ -10,24 +10,39 @@ import (
 )
 
 func (p *Payload) Serve() (string, error) {
-	releventClassifiers, err := p.SelectRelevantClassifiers(&ExistingCls)
-	if err != nil {
-		return "", err
-	}
+	var releventClassifiers *releventCls
+	// iteration := 0
+
 	run := func() (bool, error) {
-		err = p.Stage.Explore()
+		// iteration++
+		// if iteration >= 10 {
+		// 	return false, loggy.Sayf("unusual CLS loop! for %v", p.Name)
+		// }
+		// loggy.Info(
+		// 	"serve iteration started",
+		// 	"file", p.Name,
+		// 	"iteration", iteration,
+		// 	"stage", p.Stage.Path,
+		// )
+
+		err := p.Stage.Explore()
 		if err != nil {
 			return false, err
 		}
 
-		if p.Stage.Info == nil {
-			err := p.Stage.GuessStageInfo(p.LlmProvider)
+		err = p.Stage.GuessStageInfo(p.LlmProvider)
+		if err != nil {
+			return false, err
+		}
+
+		req := p.NewRequest()
+
+		if releventClassifiers == nil {
+			releventClassifiers, err = p.SelectRelevantClassifiers(&ExistingCls)
 			if err != nil {
 				return false, err
 			}
 		}
-		req := p.NewRequest()
-
 		actions, err := p.Classify(req, releventClassifiers)
 		if err != nil || actions == nil {
 			return false, err
@@ -36,6 +51,23 @@ func (p *Payload) Serve() (string, error) {
 		if err != nil {
 			return false, err
 		}
+		// action := actions.Current.Type()
+		// stageAfter := p.Stage.Path
+		// reserve := actions.Current.ReServe()
+		// myRoad := []string{}
+		// for _, st := range p.Road {
+		// 	myRoad = append(myRoad, st.Path)
+		// }
+
+		// loggy.Info(
+		// 	"action completed",
+		// 	"file", p.Name,
+		// 	"iteration", iteration,
+		// 	"action", action,
+		// 	"reServe", reserve,
+		// 	"stage", stageAfter,
+		// 	"road", p.Road,
+		// )
 		return actions.Current.ReServe(), nil
 	}
 
@@ -55,13 +87,6 @@ func (p *Payload) Serve() (string, error) {
 }
 
 func (p *Payload) Classify(req *providers.JevRequest, classifiers *releventCls) (*Actions, error) {
-	*classifiers = append(*classifiers, struct {
-		Cls   *CustomCls
-		Power float64
-	}{Cls: &ClsDefault, Power: 0.6})
-
-	// loggy.Fatal(classifiers)
-
 	actions := Actions{
 		PerType: make(map[string]float64),
 		All:     make(map[*Action]float64),

@@ -56,7 +56,15 @@ func parseProposal(content string) (*NewStageProposal, error) {
 	return &p, nil
 }
 
-func (p Payload) NewStageWithInfo() error {
+func (p *Payload) NewStageWithInfo() error {
+	// path := p.Stage.Path
+	// p.Stage.InfMu.Lock()
+	// defer p.Stage.InfMu.Unlock()
+	// if p.Stage.Path != path {
+	// 	return nil
+	// } each call has its own parameter like diferent file infos and data; so each call creates a new subStage on the parrent stage
+	// therefor we may not need a mutex for this.
+
 	loggy.Info("generating Info...")
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `file-name: %v`, Options: []any{p.Name}},
@@ -142,11 +150,17 @@ Return JSON only. Do not include Markdown, headings, or explanations.`
 	/*
 		we need to check for dupllications, ai bugs, ... every commot errors that can happen, Not only here...
 	*/
-	path := filepath.Join(p.Stage.Path, respContent.Name)
-	newStage := burrow.New(path)
-	p.SetNext(newStage)
+	newPath := filepath.Join(p.Stage.Path, respContent.Name)
+	newStage := burrow.New(newPath)
 
-	p.Stage.Info = &burrow.StageInfo{Path: p.Stage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}}
-	loggy.Infof("Info generated! <%v...>", respContent)
-	return p.Stage.WriteNewHelperFile(p.Stage.Info)
+	newStage.SetInfo(&burrow.StageInfo{Path: newStage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}})
+	loggy.Infof("Info generated! for %v <%v...>", p.Name, respContent)
+	err = newStage.WriteNewHelperFile(newStage.Info)
+	if err != nil {
+		return err
+	}
+	p.Stage.AddRoot(respContent.Name, newStage)
+
+	p.SetNext(newStage)
+	return nil
 }

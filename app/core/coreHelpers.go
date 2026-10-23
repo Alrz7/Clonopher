@@ -20,9 +20,12 @@ import (
 
 func (c *ClsConfig) LoadExistingClassifiers(dir string) error {
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if !d.IsDir() {
 			name := d.Name()
-			if strings.Contains(name, ".yaml") {
+			if strings.Contains(name, ".cls.yaml") {
 				b, err := os.ReadFile(path)
 				if err != nil {
 					loggy.Fatal(err)
@@ -32,11 +35,12 @@ func (c *ClsConfig) LoadExistingClassifiers(dir string) error {
 				if err != nil {
 					return err
 				}
-				for clsName, cls := range newLoad.Classifiers {
-					if _, ok := c.Classifiers[name]; ok {
+				for clsTitle, cls := range newLoad.Classifiers {
+					cls.Name = clsTitle
+					if _, ok := c.Classifiers[cls.Name]; ok {
 						loggy.Warnf("a classifier called '%v' already exists!, rename the second one here in [%v] to prevent owerWrite!", name, path)
 					}
-					c.Classifiers[clsName] = cls
+					c.Classifiers[cls.Name] = cls
 				}
 			}
 		}
@@ -55,7 +59,7 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 	}
 
 	for clsTitle, cls := range c.Classifiers {
-		if cls.Name == ClsDefault.Name {
+		if clsTitle == ClsDefault.Name {
 			continue
 		}
 		req.Questions[clsTitle] = providers.JevQuestion{
@@ -123,6 +127,13 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 }
 
 func (p *Payload) GetState() string {
+	p.Stage.InfMu.RLock()
+	p.Stage.Mu.RLock()
+	defer func() {
+		p.Stage.Mu.RUnlock()
+		p.Stage.InfMu.RUnlock()
+	}()
+
 	infoOptions := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `Current directory %v Target file: %v`, Options: []any{p.Stage.Path, p.Name}},
 

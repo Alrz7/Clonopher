@@ -2,6 +2,7 @@ package app
 
 import (
 	"clonopher/api"
+	"clonopher/app/burrow"
 	"clonopher/app/config"
 	"clonopher/app/core"
 	"clonopher/internal"
@@ -21,6 +22,13 @@ func Main() {
 	payloads, ok, err := SetConfig()
 	if err != nil {
 		loggy.Fatal(err)
+	}
+
+	for head, path := range config.Default.App.Heads {
+		_, err := burrow.NewGlobal(head, path)
+		if err != nil {
+			loggy.Fatal(err)
+		}
 	}
 
 	err = core.ExistingCls.LoadExistingClassifiers(filepath.Join(config.Default.App.AppConfigDir, internal.ClsDirName))
