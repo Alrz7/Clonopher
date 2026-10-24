@@ -9,6 +9,7 @@ import (
 	"clonopher/internal/loggy"
 	"context"
 	"path/filepath"
+	"sync"
 )
 
 func Main() {
@@ -41,12 +42,31 @@ func Main() {
 		if payloads == nil || !ok {
 			return
 		}
-		for _, p := range payloads {
-			_, err := p.Serve()
-			if err != nil {
-				loggy.Error(err)
-			}
+
+		done := make(chan struct{})
+		tui, err := core.StartPayloadTUI(done, config.Default.Cli.LogLevel)
+		if err != nil {
+			loggy.Fatal(err)
 		}
+
+		wg := sync.WaitGroup{}
+		for _, p := range payloads {
+			run := func() {
+				_, err := p.Serve()
+				if err != nil {
+					loggy.Error(err)
+				}
+			}
+			wg.Go(run)
+		}
+
+		wg.Wait()
+
+		close(done)
+		if err := tui.Wait(); err != nil {
+			loggy.Fatal(err)
+		}
+
 	case internal.ApiMode:
 		if !ok {
 			return

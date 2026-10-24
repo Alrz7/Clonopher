@@ -10,16 +10,7 @@ import (
 )
 
 func (p *Payload) Serve() (string, error) {
-	// loggy.Info("-start-")
 	var releventClassifiers *releventCls
-
-	done := make(chan struct{})
-	loggy.Info(p.Options.RunMode)
-	tui, err := StartPayloadTUI(p.Options.RunMode == internal.CliMode, done)
-	if err != nil {
-		p.SetState(PayloadStateFailed)
-		return "", err
-	}
 
 	run := func() (bool, error) {
 		p.AddIteration()
@@ -53,6 +44,7 @@ func (p *Payload) Serve() (string, error) {
 			if err != nil {
 				return false, err
 			}
+			p.LogRelevents(releventClassifiers)
 		}
 
 		p.SetState(PayloadStateClassifying)
@@ -84,13 +76,6 @@ func (p *Payload) Serve() (string, error) {
 	}
 
 	p.SetState(PayloadStateCompleted)
-
-	close(done)
-	if err := tui.Wait(); err != nil {
-		p.SetState(PayloadStateFailed)
-		return "", err
-	}
-
 	return p.Stage.Path, nil
 }
 

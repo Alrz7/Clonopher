@@ -98,7 +98,7 @@ func (s *Stage) InferStageInfo(provider *providers.Provider) error {
 		return nil
 	}
 
-	loggy.Info("generating Info...")
+	// loggy.Info("generating Info...")
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `dir-path: %v`, Options: []any{s.Path}},
 		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(s.Roots))}},

@@ -63,7 +63,7 @@ func SetConfig() ([]*core.Payload, bool, error) {
 			// 	config.Default.App.Head = head
 			// }
 
-			payloads = SetPayload(srcs, descriptions, head, runMode,policy)
+			payloads = SetPayload(srcs, descriptions, head, runMode, policy)
 			if len(payloads) > 0 {
 				config.Default.App.RunMode = internal.CliMode
 			}
@@ -110,6 +110,10 @@ func SetConfig() ([]*core.Payload, bool, error) {
 		&descriptions, "info", "i", "",
 		"Comma-separated descriptions corresponding to the source paths. Use '-' to skip a description.",
 	)
+	flags.StringVarP(
+		&config.Default.Cli.LogLevel, "loglevel", "l", "",
+		"loglevel for cli",
+	)
 
 	if err := rootCmd.Execute(); err != nil {
 		return nil, false, err
@@ -129,14 +133,19 @@ func SetPayload(srcs, descriptions, head, runMode, actionPolicy string) []*core.
 	var res []*core.Payload
 	srclist := strings.Split(srcs, ",")
 	descList := strings.Split(descriptions, ",")
-	if len(srclist) != len(descList) {
+
+	if len(descList) != 1 && len(srclist) != len(descList) {
 		loggy.Fatal("src(s) and description(s) are not match!, one has more parameters.")
 	}
 	for i := range len(srclist) {
 		name := filepath.Base(srclist[i])
+		var desc string
+		if len(descList) >= i+1 {
+			desc = descList[i]
+		}
 		p, err := core.New(&config.Default, name,
 			head,
-			srclist[i], descList[i],
+			srclist[i], desc,
 			actionPolicy,
 			internal.CliMode)
 		if err != nil {

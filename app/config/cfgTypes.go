@@ -8,6 +8,7 @@ import (
 type Config struct {
 	App          *App             `koanf:"app"`
 	Api          *ApiOptions      `koanf:"api"`
+	Cli          *CliOptions      `koanf:"-"`
 	JevProviders *ProviderOptions `koanf:"jev_providers"`
 	LlmProviders *ProviderOptions `koanf:"llm_providers"`
 }
@@ -25,6 +26,10 @@ type ProviderOptions struct {
 	All            map[string]*providers.Provider `koanf:"all"`
 	ActiveProvider string                         `koanf:"active_provider"`
 	ActiveModel    string                         `koanf:"active_model"`
+}
+
+type CliOptions struct {
+	LogLevel string
 }
 type ApiOptions struct {
 	Port int `koanf:"port"`

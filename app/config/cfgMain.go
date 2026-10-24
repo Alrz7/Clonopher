@@ -13,6 +13,7 @@ var K = koanf.New(".")
 var Default = Config{
 	App: &App{Heads: map[string]string{}},
 	Api: &ApiOptions{},
+	Cli: &CliOptions{},
 }
 
 func (c *Config) Setup(configPath string) {

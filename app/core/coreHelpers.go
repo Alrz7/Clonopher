@@ -152,3 +152,15 @@ func (p *Payload) SetNext(next *burrow.Stage) {
 	p.ShiftStage(next) // this saves last record so it should be called first!
 	p.Stage = next
 }
+
+func (p *Payload) LogRelevents(r *releventCls) {
+	var res = "relevent classifiers:"
+	for _, relv := range *r {
+		res += fmt.Sprintf(" <name: %v, power: %v>", relv.Cls.Name, relv.Power)
+	}
+	if len(*r) == 0 {
+		p.ShiftNewWarn("no relevnt classifiers was selected for this payload")
+		return
+	}
+	p.ShiftNewInfo(res)
+}

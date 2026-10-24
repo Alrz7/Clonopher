@@ -2,6 +2,7 @@ package core
 
 import (
 	"clonopher/app/burrow"
+	"fmt"
 	"sort"
 	"sync"
 )
@@ -25,6 +26,16 @@ const (
 	PayloadStateCancelled PayloadState = "cancelled"
 )
 
+const (
+	PdLError = "error"
+	PdLWarn  = "warn"
+	PdLInfo  = "info"
+)
+
+type PayloadLog struct {
+	Content string
+	Type    string
+}
 type PayloadStatus struct {
 	Mu         *sync.RWMutex   `json:"-"`
 	ID         string          `json:"id"`
@@ -35,19 +46,20 @@ type PayloadStatus struct {
 	Iteration  int             `json:"iteration"`
 	LastAction string          `json:"lastAction"`
 	Actions    []string        `json:"actions"`
+	Logs       []PayloadLog
 }
 
-func (pd *Payload) ShiftStage(stage *burrow.Stage) {
-	pStat := Stats.Get(pd.Id)
+func (p *Payload) ShiftStage(stage *burrow.Stage) {
+	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
 
-	pStat.Road = append(pStat.Road, pd.Stage)
+	pStat.Road = append(pStat.Road, p.Stage)
 	pStat.Stage = stage
 }
 
-func (pd *Payload) ShiftAction(action string) {
-	pStat := Stats.Get(pd.Id)
+func (p *Payload) ShiftAction(action string) {
+	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
 
@@ -55,20 +67,68 @@ func (pd *Payload) ShiftAction(action string) {
 	pStat.LastAction = action
 }
 
-func (pd *Payload) SetState(state PayloadState) {
-	pStat := Stats.Get(pd.Id)
+func (p *Payload) SetState(state PayloadState) {
+	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
 
 	pStat.State = state
 }
 
-func (pd *Payload) AddIteration() {
-	pStat := Stats.Get(pd.Id)
+func (p *Payload) AddIteration() {
+	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
 
 	pStat.Iteration++
+}
+
+// -----‌< Log >------
+
+func (p *Payload) ShiftNewError(content string) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLError, Content: content})
+}
+func (p *Payload) ShiftNewErrorf(format string, params ...string) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLError, Content: fmt.Sprintf(format, params)})
+}
+func (p *Payload) ShiftError(err error) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLError, Content: err.Error()})
+}
+
+func (p *Payload) ShiftNewInfo(content string) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLInfo, Content: content})
+}
+
+func (p *Payload) ShiftNewInfof(format string, params ...string) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLInfo, Content: fmt.Sprintf(format, params)})
+}
+
+func (p *Payload) ShiftNewWarn(content string) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLWarn, Content: content})
+}
+func (p *Payload) ShiftNewWarnf(format string, params ...string) {
+	pStat := Stats.Get(p.Id)
+	pStat.Mu.Lock()
+	defer pStat.Mu.Unlock()
+	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLWarn, Content: fmt.Sprintf(format, params)})
 }
 
 type stdb map[string]*PayloadStatus
