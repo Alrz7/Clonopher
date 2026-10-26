@@ -20,34 +20,51 @@ type Stage struct {
 }
 
 type InfoProvider struct {
-	Provider string `yaml:"provider"`
-	Model    string `yaml:"model"`
+	Provider string `yaml:"provider" json:"provider"`
+	Model    string `yaml:"model" json:"model"`
 }
 
 type StageInfo struct {
-	StageID   string        `yaml:"stage_id"`
-	Path      string        `yaml:"path"`
-	CreatedAt time.Time     `yaml:"created_at"`
-	UpdatedAt time.Time     `yaml:"updated_at"`
-	Version   int           `yaml:"version"`
-	Brief     string        `yaml:"brief"`
-	Creator   *InfoProvider `yaml:"creator,omitempty"`
-	Modifier  *InfoProvider `yaml:"modifier,omitempty"`
-	// Description string
-	// RelatedWords []string
+	StageID   string        `yaml:"stage_id" json:"stage_id"`
+	Path      string        `yaml:"path" json:"path"`
+	CreatedAt time.Time     `yaml:"created_at" json:"created_at"`
+	UpdatedAt time.Time     `yaml:"updated_at" json:"updated_at"`
+	Version   int           `yaml:"version" json:"version"`
+	Brief     string        `yaml:"brief" json:"brief"`
+	Creator   *InfoProvider `yaml:"creator,omitempty" json:"creator,omitempty"`
+	Modifier  *InfoProvider `yaml:"modifier,omitempty" json:"modifier,omitempty"`
 }
 
 func New(path string) *Stage {
-	return &Stage{
+	new := &Stage{
 		Path:  path,
 		Roots: map[string]*Stage{},
 		InfMu: &sync.RWMutex{},
 		Mu:    &sync.RWMutex{},
 	}
+	new.AddToAll()
+	return new
 }
 
 // new with options...
 
+var All = make(map[string]*Stage)
+var AllMu = sync.RWMutex{}
+
+func (s *Stage) AddToAll() {
+	AllMu.Lock()
+	defer AllMu.Unlock()
+	All[s.Path] = s
+}
+
+func GetFromAll(path string) (*Stage, bool) {
+	AllMu.RLock()
+	defer AllMu.RUnlock()
+	res, ok := All[path]
+	return res, ok
+}
+
+// ----< Globals >----
 var Globals = make(map[string]*Stage)
 var GlbsMu = sync.RWMutex{}
 
@@ -81,7 +98,6 @@ func NewGlobal(title, path string) (*Stage, error) {
 			return nil, loggy.Say("head path is not valid, is it a file?!")
 		}
 	}
-
 }
 
 func GetFromGlobals(title string) (*Stage, bool) {

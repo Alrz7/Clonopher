@@ -8,11 +8,22 @@ import (
 )
 
 func (api *ApiConfig) routes() *httprouter.Router {
-
 	router := httprouter.New()
 
 	router.HandlerFunc(http.MethodGet, "/", api.handleHome)
-	router.HandlerFunc(http.MethodPost, "/payload", api.HandleUploadTextFile)
+
+	// Payload monitoring
+	router.HandlerFunc(http.MethodGet, "/api/v1/payloads/stats", api.HandleGetPayloadStats)
+
+	// Stage browsing
+	router.HandlerFunc(http.MethodGet, "/api/v1/stages/list", api.HandleGetStageList)
+	router.HandlerFunc(http.MethodPost, "/api/v1/stages/query", api.HandleGetGlobalStage)
+	router.HandlerFunc(http.MethodPost, "/api/v1/stages/info", api.HandleGetStageInfo)
+
+	// Payload submission
+	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/text", api.HandleUploadTextFile)
+	// router.HandlerFunc(http.MethodPost, "/api/v1/payloads/file", api.HandleUploadFile)
+
 	return router
 }
 

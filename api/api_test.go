@@ -37,7 +37,7 @@ type concurrentUploadResult struct {
 func TestConcurrentPayloadUpload(t *testing.T) {
 	endpoint := os.Getenv("CLONOPHER_API_URL")
 	if endpoint == "" {
-		endpoint = "http://localhost:6520/payload"
+		endpoint = "http://localhost:6520/api/v1/payloads/text"
 	}
 
 	cases := []struct {

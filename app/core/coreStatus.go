@@ -47,6 +47,10 @@ type PayloadStatus struct {
 	LastAction string          `json:"lastAction"`
 	Actions    []string        `json:"actions"`
 	Logs       []PayloadLog
+
+	//api-spec-paramters
+	StageString string   `json:"path"`
+	RoadString  []string `json:"road"`
 }
 
 func (p *Payload) ShiftStage(stage *burrow.Stage) {
@@ -131,12 +135,12 @@ func (p *Payload) ShiftNewWarnf(format string, params ...string) {
 	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLWarn, Content: fmt.Sprintf(format, params)})
 }
 
-type stdb map[string]*PayloadStatus
+type Stdb map[string]*PayloadStatus
 
-var Stats = stdb{}
-var dbMu = sync.RWMutex{}
+var Stats = Stdb{}
+var StatsMu = sync.RWMutex{}
 
-func (db *stdb) AddNew(id, name string, stage *burrow.Stage) {
+func (db *Stdb) AddNew(id, name string, stage *burrow.Stage) {
 	status := &PayloadStatus{
 		Mu:    &sync.RWMutex{},
 		ID:    id,
@@ -145,26 +149,26 @@ func (db *stdb) AddNew(id, name string, stage *burrow.Stage) {
 		Stage: stage,
 	}
 
-	dbMu.Lock()
-	defer dbMu.Unlock()
+	StatsMu.Lock()
+	defer StatsMu.Unlock()
 	(*db)[id] = status
 }
 
-func (db *stdb) Get(id string) *PayloadStatus {
-	dbMu.RLock()
-	defer dbMu.RUnlock()
+func (db *Stdb) Get(id string) *PayloadStatus {
+	StatsMu.RLock()
+	defer StatsMu.RUnlock()
 	return (*db)[id]
 }
 
 // Snapshot returns the registered status pointers in a stable order.
 // Callers must lock each status before reading or changing its fields.
-func (db *stdb) Snapshot() []*PayloadStatus {
-	dbMu.RLock()
+func (db *Stdb) Snapshot() []*PayloadStatus {
+	StatsMu.RLock()
 	statuses := make([]*PayloadStatus, 0, len(*db))
 	for _, status := range *db {
 		statuses = append(statuses, status)
 	}
-	dbMu.RUnlock()
+	StatsMu.RUnlock()
 
 	sort.Slice(statuses, func(i, j int) bool {
 		return statuses[i].ID < statuses[j].ID

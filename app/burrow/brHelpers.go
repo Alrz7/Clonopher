@@ -1,6 +1,7 @@
 package burrow
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -120,4 +121,40 @@ func (s *Stage) SetInfo(info *StageInfo) {
 
 func (s *Stage) setInfoLocked(info *StageInfo) {
 	s.Info = info
+}
+
+type SnpShot struct {
+	Path  string              `json:"path"`
+	Roots map[string]*SnpShot `json:"substages"`
+	Files []string            `json:"existingFiles"`
+}
+
+func (s *Stage) SnapShot(depth int) *SnpShot {
+	take := func(stage *Stage) *SnpShot {
+		var out = SnpShot{
+			Path:  stage.Path,
+			Roots: map[string]*SnpShot{},
+			Files: make([]string, len(stage.Files)),
+		}
+		copy(out.Files, stage.Files)
+		return &out
+	}
+
+	s.Mu.RLock()
+	res := take(s)
+	if depth == 0 {
+		s.Mu.RUnlock()
+		return res
+	}
+	var roots = map[string]*Stage{}
+	maps.Copy(roots, s.Roots)
+	s.Mu.RUnlock()
+
+	for rootName, root := range roots {
+		if root == nil {
+			continue
+		}
+		res.Roots[rootName] = root.SnapShot(depth - 1)
+	}
+	return res
 }
