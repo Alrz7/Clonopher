@@ -2,9 +2,11 @@ package core
 
 import (
 	"clonopher/app/burrow"
+	"clonopher/internal/loggy"
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 )
 
 type PayloadState string
@@ -26,16 +28,8 @@ const (
 	PayloadStateCancelled PayloadState = "cancelled"
 )
 
-const (
-	PdLError = "error"
-	PdLWarn  = "warn"
-	PdLInfo  = "info"
-)
 
-type PayloadLog struct {
-	Content string
-	Type    string
-}
+type Log = loggy.PydLog
 type PayloadStatus struct {
 	Mu         *sync.RWMutex   `json:"-"`
 	ID         string          `json:"id"`
@@ -46,7 +40,7 @@ type PayloadStatus struct {
 	Iteration  int             `json:"iteration"`
 	LastAction string          `json:"lastAction"`
 	Actions    []string        `json:"actions"`
-	Logs       []PayloadLog
+	Logs       []Log
 
 	//api-spec-paramters
 	StageString string   `json:"path"`
@@ -93,46 +87,46 @@ func (p *Payload) ShiftNewError(content string) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLError, Content: content})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLError, Content: content, Timestamp: time.Now()})
 }
 func (p *Payload) ShiftNewErrorf(format string, params ...string) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLError, Content: fmt.Sprintf(format, params)})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLError, Content: fmt.Sprintf(format, params), Timestamp: time.Now()})
 }
 func (p *Payload) ShiftError(err error) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLError, Content: err.Error()})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLError, Content: err.Error(), Timestamp: time.Now()})
 }
 
 func (p *Payload) ShiftNewInfo(content string) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLInfo, Content: content})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLInfo, Content: content, Timestamp: time.Now()})
 }
 
 func (p *Payload) ShiftNewInfof(format string, params ...string) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLInfo, Content: fmt.Sprintf(format, params)})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLInfo, Content: fmt.Sprintf(format, params), Timestamp: time.Now()})
 }
 
 func (p *Payload) ShiftNewWarn(content string) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLWarn, Content: content})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLWarn, Content: content, Timestamp: time.Now()})
 }
 func (p *Payload) ShiftNewWarnf(format string, params ...string) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
-	pStat.Logs = append(pStat.Logs, PayloadLog{Type: PdLWarn, Content: fmt.Sprintf(format, params)})
+	pStat.Logs = append(pStat.Logs, Log{Type: loggy.PdLWarn, Content: fmt.Sprintf(format, params), Timestamp: time.Now()})
 }
 
 type Stdb map[string]*PayloadStatus

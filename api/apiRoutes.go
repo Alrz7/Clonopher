@@ -14,6 +14,7 @@ func (api *ApiConfig) routes() *httprouter.Router {
 
 	// Payload monitoring
 	router.HandlerFunc(http.MethodGet, "/api/v1/payloads/stats", api.HandleGetPayloadStats)
+	router.HandlerFunc(http.MethodGet, "/api/v1/logs", api.HandleGetGlobalLogs)
 
 	// Stage browsing
 	router.HandlerFunc(http.MethodGet, "/api/v1/stages/list", api.HandleGetStageList)

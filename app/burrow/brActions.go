@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -18,48 +17,6 @@ import (
 	"github.com/spf13/fileflow"
 	"go.yaml.in/yaml/v3"
 )
-
-func (s *Stage) Explore() error {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	if s.Explored.Load() {
-		return nil
-	}
-
-	err := filepath.WalkDir(s.Path, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		isDir := d.IsDir()
-		if isDir {
-			if ShouldSkip(d.Name()) {
-				return filepath.SkipDir
-			}
-			if path != s.Path {
-				root := New(path)
-				err = root.ReadHelperFile()
-				if err != nil {
-					return err
-				}
-				s.addRootLocked(d.Name(), root)
-				return filepath.SkipDir
-			} else {
-				err = s.readHelperFileLocked()
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			s.addFileLocked(d.Name())
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	s.Explored.Store(true)
-	return nil
-}
 
 func (s *Stage) ReadHelperFile() error {
 	s.Mu.Lock()
@@ -98,7 +55,7 @@ func (s *Stage) InferStageInfo(provider *providers.Provider) error {
 		return nil
 	}
 
-	// loggy.Info("generating Info...")
+	loggy.AddNew("generating Info...", loggy.PdLInfo)
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `dir-path: %v`, Options: []any{s.Path}},
 		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(s.Roots))}},
@@ -154,7 +111,7 @@ Rules:
 		Brief:     respContent,
 		Modifier:  &InfoProvider{Provider: provider.Name, Model: req.Model}, StageID: id}
 
-	// loggy.Infof("Info generated! for %v <%v...>", s.Path, respContent)
+	loggy.AddNewf("Info generated! for %v <%v...>", loggy.PdLInfo, s.Path, respContent)
 	err = s.WriteNewHelperFile(s.Info)
 	if err != nil {
 		return err

@@ -17,7 +17,7 @@ var Default = Config{
 }
 
 func (c *Config) Setup(configPath string) {
-	// configPath := filepath.Join(configDir, "marble.yaml")
+	// configPath := filepath.Join(configDir, "clonopher.config.yaml")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// loggy.Fatal(err)

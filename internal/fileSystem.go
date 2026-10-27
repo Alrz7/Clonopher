@@ -9,6 +9,7 @@ import (
 const (
 	ConfgDirName = "clonopher"
 	ClsDirName   = "classifiers"
+	UploadDirName = "ClonopherUploads"
 )
 
 func SetAppDir() (string, error) {

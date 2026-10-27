@@ -19,6 +19,7 @@ export function AppLayout() {
           <span>clonopher</span>
         </NavLink>
         <nav className="primary-nav" aria-label="Main navigation">
+          <NavLink to="/upload/content" end className={({ isActive }) => `primary-nav-link ${isActive ? 'primary-nav-link-active' : ''}`}>New Content</NavLink>
           <NavLink to="/" end className={({ isActive }) => `primary-nav-link ${isActive ? 'primary-nav-link-active' : ''}`}>Payload activity</NavLink>
           <NavLink to="/stages" className={({ isActive }) => `primary-nav-link ${isActive ? 'primary-nav-link-active' : ''}`}><GitBranch size={15} />Stages</NavLink>
         </nav>

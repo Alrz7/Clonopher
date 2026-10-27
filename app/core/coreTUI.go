@@ -1,6 +1,7 @@
 package core
 
 import (
+	"clonopher/internal/loggy"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -58,12 +59,12 @@ type payloadTUIRow struct {
 	stagePath  string
 	lastAction string
 	iteration  int
-	logs       []PayloadLog
+	logs       []Log
 }
 
 type payloadTUILogRow struct {
 	payloadName string
-	log         PayloadLog
+	log         Log
 }
 
 type payloadTUIFrameMsg string
@@ -232,14 +233,14 @@ func hasLivePayloadLogConsole(level string) bool {
 
 // Live console: error, warn and info each display only their own type.
 // all and silly display every log type.
-func livePayloadLogVisible(level string, entry PayloadLog) bool {
+func livePayloadLogVisible(level string, entry Log) bool {
 	switch normalizePayloadLogLevel(level) {
 	case "error":
-		return entry.Type == PdLError
+		return entry.Type == loggy.PdLError
 	case "warn":
-		return entry.Type == PdLWarn
+		return entry.Type == loggy.PdLWarn
 	case "info":
-		return entry.Type == PdLInfo
+		return entry.Type == loggy.PdLInfo
 	case "all", "silly":
 		return true
 	default:
@@ -249,16 +250,16 @@ func livePayloadLogVisible(level string, entry PayloadLog) bool {
 
 // Final output always includes errors. warn adds warnings, info adds info logs,
 // and all/silly include every log type.
-func finalPayloadLogVisible(level string, entry PayloadLog) bool {
+func finalPayloadLogVisible(level string, entry Log) bool {
 	switch normalizePayloadLogLevel(level) {
 	case "warn":
-		return entry.Type == PdLError || entry.Type == PdLWarn
+		return entry.Type == loggy.PdLError || entry.Type == loggy.PdLWarn
 	case "info":
-		return entry.Type == PdLError || entry.Type == PdLInfo
+		return entry.Type == loggy.PdLError || entry.Type == loggy.PdLInfo
 	case "all", "silly":
 		return true
 	default:
-		return entry.Type == PdLError
+		return entry.Type == loggy.PdLError
 	}
 }
 
@@ -466,7 +467,7 @@ func readPayloadTUIRows() []payloadTUIRow {
 			state:      status.State,
 			lastAction: status.LastAction,
 			iteration:  status.Iteration,
-			logs:       append([]PayloadLog(nil), status.Logs...),
+			logs:       append([]Log(nil), status.Logs...),
 		}
 
 		if status.Stage != nil {
@@ -514,11 +515,11 @@ func renderPayloadLogLine(entry payloadTUILogRow, width int) string {
 	var styledType string
 
 	switch entry.log.Type {
-	case PdLError:
+	case loggy.PdLError:
 		styledType = payloadTIError.Render(label)
-	case PdLWarn:
+	case loggy.PdLWarn:
 		styledType = payloadTIWarn.Render(label)
-	case PdLInfo:
+	case loggy.PdLInfo:
 		styledType = payloadTIState.Render(label)
 	default:
 		styledType = payloadTIDimStyle.Render(label)

@@ -31,6 +31,19 @@ func (api *ApiConfig) HandleGetPayloadStats(w http.ResponseWriter, r *http.Reque
 	core.StatsMu.RUnlock()
 
 	res["payloads"] = snapShot
+
+	err := api.writeJSON(w, http.StatusOK, res, nil)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (api *ApiConfig) HandleGetGlobalLogs(w http.ResponseWriter, r *http.Request) {
+	res := internal.Envelope{}
+	GlbLogs := loggy.GetAll()
+	res["logs"] = GlbLogs
+
 	err := api.writeJSON(w, http.StatusOK, res, nil)
 	if err != nil {
 		api.serverErrorResponse(w, r, err)

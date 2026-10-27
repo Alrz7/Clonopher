@@ -86,6 +86,10 @@ func NewGlobal(title, path string) (*Stage, error) {
 	ok, err := internal.IsDir(path)
 	if ok {
 		head := New(path)
+		err := head.ExploreGlobal(-1)
+		if err != nil {
+			return nil, err
+		}
 		err = head.SetAsGlobal(title)
 		if err != nil {
 			return nil, err

@@ -97,7 +97,7 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 			if res.Noul == nil {
 				return nil, loggy.Sayf("nil answer for classifier: '%v'", clsTitle)
 			}
-			// loggy.Info(*res.Noul, "cls", clsTitle)
+			// loggy.AddNewf(*res.Noul, "cls", clsTitle)
 			if *res.Noul < 0.5 {
 				continue
 			}

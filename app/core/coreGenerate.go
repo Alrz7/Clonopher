@@ -4,6 +4,7 @@ import (
 	"clonopher/app/burrow"
 	"clonopher/app/providers"
 	"clonopher/internal/helpers"
+	"clonopher/internal/loggy"
 	"context"
 	"encoding/json"
 	"errors"
@@ -66,7 +67,7 @@ func (p *Payload) NewStageWithInfo() error {
 
 	p.Stage.Mu.RLock()
 	oldPath := p.Stage.Path
-	// loggy.Info("generating Info...")
+	loggy.AddNewf("generating Info...", loggy.PdLInfo)
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `file-name: %v`, Options: []any{p.Name}},
 		&helpers.InfoOption{Info: `file-info: %v`, Options: []any{p.Info.Render()}},
@@ -156,7 +157,7 @@ Return JSON only. Do not include Markdown, headings, or explanations.`
 	newStage := burrow.New(newPath)
 
 	newStage.SetInfo(&burrow.StageInfo{Path: newStage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}})
-	// loggy.Infof("Info generated! for %v <%v...>", p.Name, respContent)
+	loggy.AddNewf("Info generated! for %v <%v...>", loggy.PdLInfo, p.Name, respContent.Brief)
 	err = newStage.WriteNewHelperFile(newStage.Info)
 	if err != nil {
 		return err
