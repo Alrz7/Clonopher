@@ -27,13 +27,13 @@ func (i *ObjectInfo) Render() string {
 	return string(b)
 }
 
-type NewStageProposal struct {
+type NewDirectoryProposal struct {
 	Name  string `json:"name"`
 	Brief string `json:"brief"`
 }
 
-func parseProposal(content string) (*NewStageProposal, error) {
-	var p NewStageProposal
+func parseProposal(content string) (*NewDirectoryProposal, error) {
+	var p NewDirectoryProposal
 
 	if err := json.Unmarshal([]byte(content), &p); err != nil {
 		return nil, fmt.Errorf("decode directory proposal: %w", err)
@@ -56,26 +56,26 @@ func parseProposal(content string) (*NewStageProposal, error) {
 	return &p, nil
 }
 
-func (p *Payload) NewStageWithInfo() error {
-	// path := p.Stage.Path
-	// p.Stage.InfMu.Lock()
-	// defer p.Stage.InfMu.Unlock()
-	// if p.Stage.Path != path {
+func (p *Payload) NewDirectoryWithInfo() error {
+	// path := p.Dir.Path
+	// p.Dir.InfMu.Lock()
+	// defer p.Dir.InfMu.Unlock()
+	// if p.Dir.Path != path {
 	// 	return nil
-	// } each call has its own parameter like diferent file infos and data; so each call creates a new subStage on the parrent stage
+	// } each call has its own parameter like diferent file infos and data; so each call creates a new Directories on the parrent Directory
 	// therefor we may not need a mutex for this.
 
-	p.Stage.Mu.RLock()
-	oldPath := p.Stage.Path
+	p.Dir.Mu.RLock()
+	oldPath := p.Dir.Path
 	loggy.AddNewf("generating Info...", loggy.PdLInfo)
 	feed := helpers.InfoOptions{
 		&helpers.InfoOption{Info: `file-name: %v`, Options: []any{p.Name}},
 		&helpers.InfoOption{Info: `file-info: %v`, Options: []any{p.Info.Render()}},
-		&helpers.InfoOption{Info: `parentDir-path: %v`, Options: []any{p.Stage.Path}},
-		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(p.Stage.Roots))}},
-		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{p.Stage.Files}},
+		&helpers.InfoOption{Info: `parentDir-path: %v`, Options: []any{p.Dir.Path}},
+		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(p.Dir.Children))}},
+		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{p.Dir.Files}},
 	}.ConcatIfExists()
-	p.Stage.Mu.RUnlock()
+	p.Dir.Mu.RUnlock()
 
 	query := `You are Clonopher's directory metadata composer.
 
@@ -154,16 +154,16 @@ Return JSON only. Do not include Markdown, headings, or explanations.`
 		we need to check for dupllications, ai bugs, ... every commot errors that can happen, Not only here...
 	*/
 	newPath := filepath.Join(oldPath, respContent.Name)
-	newStage := burrow.New(newPath)
+	newDirectory := burrow.New(newPath)
 
-	newStage.SetInfo(&burrow.StageInfo{Path: newStage.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}})
+	newDirectory.SetInfo(&burrow.DirInfo{Path: newDirectory.Path, CreatedAt: time.Now(), UpdatedAt: time.Now(), Brief: respContent.Brief, Creator: &burrow.InfoProvider{Provider: p.LlmProvider.Name, Model: req.Model}})
 	loggy.AddNewf("Info generated! for %v <%v...>", loggy.PdLInfo, p.Name, respContent.Brief)
-	err = newStage.WriteNewHelperFile(newStage.Info)
+	err = newDirectory.WriteNewHelperFile(newDirectory.Info)
 	if err != nil {
 		return err
 	}
-	p.Stage.AddRoot(respContent.Name, newStage)
+	p.Dir.AddRoot(respContent.Name, newDirectory)
 
-	p.SetNext(newStage)
+	p.SetNext(newDirectory)
 	return nil
 }

@@ -127,30 +127,30 @@ func (p *Payload) SelectRelevantClassifiers(c *ClsConfig) (*releventCls, error) 
 }
 
 func (p *Payload) GetState() string {
-	p.Stage.Mu.RLock()
-	p.Stage.InfMu.RLock()
+	p.Dir.Mu.RLock()
+	p.Dir.InfMu.RLock()
 	defer func() {
-		p.Stage.Mu.RUnlock()
-		p.Stage.InfMu.RUnlock()
+		p.Dir.Mu.RUnlock()
+		p.Dir.InfMu.RUnlock()
 	}()
 
 	infoOptions := helpers.InfoOptions{
-		&helpers.InfoOption{Info: `Current directory %v Target file: %v`, Options: []any{p.Stage.Path, p.Name}},
+		&helpers.InfoOption{Info: `Current directory %v Target file: %v`, Options: []any{p.Dir.Path, p.Name}},
 
 		&helpers.InfoOption{Info: `File Info: %v`, Options: []any{p.Info.Render()}},
 
-		&helpers.InfoOption{Info: `Current directory info: %v`, Options: []any{p.Stage.Info.Render()}},
+		&helpers.InfoOption{Info: `Current directory info: %v`, Options: []any{p.Dir.Info.Render()}},
 
-		&helpers.InfoOption{Info: `Representative files in current directory: %v`, Options: []any{p.Stage.Files}},
+		&helpers.InfoOption{Info: `Representative files in current directory: %v`, Options: []any{p.Dir.Files}},
 
-		&helpers.InfoOption{Info: `Available child directories: %v`, Options: []any{slices.Sorted(maps.Keys(p.Stage.Roots))}},
+		&helpers.InfoOption{Info: `Available child directories: %v`, Options: []any{slices.Sorted(maps.Keys(p.Dir.Children))}},
 	}
 	return infoOptions.ConcatIfExists()
 }
 
-func (p *Payload) SetNext(next *burrow.Stage) {
-	p.ShiftStage(next) // this saves last record so it should be called first!
-	p.Stage = next
+func (p *Payload) SetNext(next *burrow.Directory) {
+	p.ShiftDir(next) // this saves last record so it should be called first!
+	p.Dir = next
 }
 
 func (p *Payload) LogRelevents(r *releventCls) {

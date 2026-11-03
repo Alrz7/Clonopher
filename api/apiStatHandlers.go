@@ -4,6 +4,7 @@ import (
 	"clonopher/app/burrow"
 	"clonopher/app/core"
 	"clonopher/internal"
+	"clonopher/internal/fileSystem"
 	"clonopher/internal/loggy"
 	"maps"
 	"net/http"
@@ -20,10 +21,10 @@ func (api *ApiConfig) HandleGetPayloadStats(w http.ResponseWriter, r *http.Reque
 		snpShot := *stat
 		stat.Mu.RLock()
 		for _, st := range stat.Road {
-			snpShot.RoadString = append(snpShot.RoadString, st.Path)
+			snpShot.RoadStr = append(snpShot.RoadStr, st.Path)
 		}
-		snpShot.StageString = stat.Stage.Path
-		snpShot.Stage = nil
+		snpShot.Path = stat.Directory.Path
+		snpShot.Directory = nil
 		snpShot.Road = nil
 		stat.Mu.RUnlock()
 		snapShot[id] = snpShot
@@ -51,7 +52,7 @@ func (api *ApiConfig) HandleGetGlobalLogs(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (api *ApiConfig) HandleGetStageList(w http.ResponseWriter, r *http.Request) {
+func (api *ApiConfig) HandleGetDirList(w http.ResponseWriter, r *http.Request) {
 	res := internal.Envelope{}
 
 	burrow.GlbsMu.RLock()
@@ -67,7 +68,7 @@ func (api *ApiConfig) HandleGetStageList(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (api *ApiConfig) HandleGetGlobalStage(w http.ResponseWriter, r *http.Request) {
+func (api *ApiConfig) HandleGetGlobalDirectory(w http.ResponseWriter, r *http.Request) {
 	var entry struct {
 		Title string `json:"select"`
 	}
@@ -93,7 +94,7 @@ func (api *ApiConfig) HandleGetGlobalStage(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (api *ApiConfig) HandleGetStageInfo(w http.ResponseWriter, r *http.Request) {
+func (api *ApiConfig) HandleGetDirInfo(w http.ResponseWriter, r *http.Request) {
 	var entry struct {
 		Path string `json:"path"`
 	}
@@ -104,7 +105,7 @@ func (api *ApiConfig) HandleGetStageInfo(w http.ResponseWriter, r *http.Request)
 	}
 	res := internal.Envelope{}
 
-	stage, ok := burrow.GetFromAll(entry.Path)
+	dir, ok := burrow.GetFromAll(entry.Path)
 	if !ok {
 		res["info"] = nil
 		err := api.writeJSON(w, http.StatusOK, res, nil)
@@ -115,15 +116,28 @@ func (api *ApiConfig) HandleGetStageInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	stage.Mu.RLock()
-	if stage.Info != nil {
-		res["info"] = *stage.Info
+	dir.Mu.RLock()
+	if dir.Info != nil {
+		res["info"] = *dir.Info
 	} else {
 		res["info"] = nil
 	}
-	stage.Mu.RUnlock()
+	dir.Mu.RUnlock()
 
 	err = api.writeJSON(w, http.StatusOK, res, nil)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (api *ApiConfig) HandleGetStagingFiles(w http.ResponseWriter, r *http.Request) {
+	res := internal.Envelope{}
+
+	stagings := fileSystem.GlobalStagings.GetIdleStagings()
+	res["stagings"] = stagings
+
+	err := api.writeJSON(w, http.StatusOK, res, nil)
 	if err != nil {
 		api.serverErrorResponse(w, r, err)
 		return

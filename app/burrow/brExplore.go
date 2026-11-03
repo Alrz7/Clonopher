@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func (s *Stage) Explore() error {
+func (s *Directory) Explore() error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 	if s.Explored.Load() {
@@ -49,14 +49,14 @@ func (s *Stage) Explore() error {
 }
 
 /*
-Pre-Explores an Stage, its mainly used for Globals(Heads)
+Pre-Explores an Directory, its mainly used for Globals(Heads)
 depth == 0 --> only explores Head itself
-depth < 0  --> explores till end (every sub-stages)
+depth < 0  --> explores till end (every sub-Directories)
 */
-func (s *Stage) ExploreGlobal(depth int) error {
+func (d *Directory) ExploreGlobal(depth int) error {
 	exploreIfNot := func() error {
-		if !s.Explored.Load() {
-			err := s.Explore()
+		if !d.Explored.Load() {
+			err := d.Explore()
 			if err != nil {
 				return err
 			}
@@ -69,14 +69,14 @@ func (s *Stage) ExploreGlobal(depth int) error {
 		return err
 	}
 
-	s.Mu.RLock()
+	d.Mu.RLock()
 	if depth == 0 {
-		s.Mu.RUnlock()
+		d.Mu.RUnlock()
 		return nil
 	}
-	var roots = map[string]*Stage{}
-	maps.Copy(roots, s.Roots)
-	s.Mu.RUnlock()
+	var roots = map[string]*Directory{}
+	maps.Copy(roots, d.Children)
+	d.Mu.RUnlock()
 
 	for _, root := range roots {
 		if root == nil {

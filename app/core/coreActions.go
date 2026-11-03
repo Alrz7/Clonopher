@@ -62,7 +62,7 @@ func (a *Actions) GetWinningAction() {
 // ------------ ActMove ------------
 type ActMove struct {
 	ShouldReServe bool
-	Dst           *burrow.Stage
+	Dst           *burrow.Directory
 }
 
 func (a *ActMove) Type() string {
@@ -70,9 +70,9 @@ func (a *ActMove) Type() string {
 }
 
 func (a *ActMove) Run(p *Payload) error {
-	p.Stage.Mu.RLock()
-	defer p.Stage.Mu.RUnlock()
-	options := slices.Collect(maps.Keys(p.Stage.Roots))
+	p.Dir.Mu.RLock()
+	defer p.Dir.Mu.RUnlock()
+	options := slices.Collect(maps.Keys(p.Dir.Children))
 	slices.Sort(options)
 	loggy.AddNewf("options: %v", loggy.PdLInfo, strings.Join(options, ","))
 	// filepath.Base(a.Dst.Path)
@@ -86,7 +86,7 @@ func (a *ActMove) ReServe() bool {
 	return a != nil && a.ShouldReServe
 }
 
-// -------------- ACTUncertain -----------
+// -------------- ACTUndefined -----------
 type ACTUnDefined struct {
 	ShouldReServe bool
 }
@@ -131,7 +131,7 @@ func (a *ACTCreateNewFolder) Type() string {
 
 func (a *ACTCreateNewFolder) Run(p *Payload) error {
 	loggy.AddNewf("creating new Folder", loggy.PdLInfo)
-	return p.NewStageWithInfo()
+	return p.NewDirectoryWithInfo()
 }
 func (a *ACTCreateNewFolder) ReServe() bool {
 	return a != nil && a.ShouldReServe
@@ -147,30 +147,37 @@ func (a *ACTStayHere) Type() string {
 }
 
 func (a *ACTStayHere) Run(p *Payload) error {
-	switch p.Options.ActionPolicy {
-	case internal.PlcCopy:
-		// _, err := p.Stage.CopyFileHere(p.Src) // returns final path too
-		finalPath, err := p.Stage.CopyFileHere(p.Src) // returns final path too
-		if err != nil {
-			return err
-		}
-		loggy.AddNewf("Lets Drop it here: %v", loggy.PdLInfo, finalPath)
-	case internal.PlcMove:
-		// _, err := p.Stage.DropFileHere(p.Src) // returns final path too
-		finalPath, err := p.Stage.DropFileHere(p.Src) // returns final path too
-		if err != nil {
-			return err
-		}
-		loggy.AddNewf("Lets Drop it here: %v", loggy.PdLInfo, finalPath)
-	case internal.PlcNone:
-		return nil
-	default:
-		// filepath.Join(p.Stage.Path, filepath.Base(p.Src))
-		finalPath := filepath.Join(p.Stage.Path, filepath.Base(p.Src))
-		loggy.AddNewf("Lets Drop it here; ", loggy.PdLInfo, finalPath)
-	}
+	p.ShiftNewInfof("Session Complete! Final destination: <%v>", p.Dir.Path)
 	return nil
 }
+
 func (a *ACTStayHere) ReServe() bool {
 	return a != nil && a.ShouldReServe
+}
+
+//--------------
+
+func (p *Payload) Drop() error {
+	for _, src := range p.Srcs {
+		switch p.Options.ActionPolicy {
+		case internal.PlcCopy:
+			finalPath, err := p.Dir.CopyFileHere(src)
+			if err != nil {
+				return err
+			}
+			loggy.AddNewf("Lets Drop it here: %v", loggy.PdLInfo, finalPath)
+		case internal.PlcMove:
+			finalPath, err := p.Dir.DropFileHere(src)
+			if err != nil {
+				return err
+			}
+			loggy.AddNewf("Lets Drop it here: %v", loggy.PdLInfo, finalPath)
+		case internal.PlcNone:
+			return nil
+		default:
+			finalPath := filepath.Join(p.Dir.Path, filepath.Base(src))
+			loggy.AddNewf("Lets Drop it here; ", loggy.PdLInfo, finalPath)
+		}
+	}
+	return nil
 }

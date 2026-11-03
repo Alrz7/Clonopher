@@ -2,26 +2,25 @@ package config
 
 import (
 	"clonopher/internal/loggy"
-	"os"
 
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"github.com/spf13/fileflow"
 )
 
 var K = koanf.New(".")
 var Default = Config{
-	App: &App{Heads: map[string]string{}},
+	App: &App{Roots: map[string]string{}},
 	Api: &ApiOptions{},
 	Cli: &CliOptions{},
 }
 
-func (c *Config) Setup(configPath string) {
+func (c *Config) Setup(configPath string) (bool, error) {
 	// configPath := filepath.Join(configDir, "clonopher.config.yaml")
 
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// loggy.Fatal(err)
-		return
+	if !fileflow.Exists(configPath) {
+		return false, loggy.Sayf("config file <%v> is not defined or accessible!", configPath)
 	}
 
 	err := K.Load(
@@ -29,12 +28,12 @@ func (c *Config) Setup(configPath string) {
 		yaml.Parser(),
 	)
 	if err != nil {
-		loggy.Fatal(err)
+		return false, err
 	}
 
 	err = K.Unmarshal("", c)
 	if err != nil {
-		loggy.Fatal(err)
+		return false, err
 	}
 
 	for title, prv := range c.JevProviders.All {
@@ -47,4 +46,5 @@ func (c *Config) Setup(configPath string) {
 			prv.Name = title
 		}
 	}
+	return true, nil
 }

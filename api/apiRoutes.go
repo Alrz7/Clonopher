@@ -15,15 +15,16 @@ func (api *ApiConfig) routes() *httprouter.Router {
 	// Payload monitoring
 	router.HandlerFunc(http.MethodGet, "/api/v1/payloads/stats", api.HandleGetPayloadStats)
 	router.HandlerFunc(http.MethodGet, "/api/v1/logs", api.HandleGetGlobalLogs)
+	router.HandlerFunc(http.MethodGet, "/api/v1/stagings", api.HandleGetStagingFiles)
 
-	// Stage browsing
-	router.HandlerFunc(http.MethodGet, "/api/v1/stages/list", api.HandleGetStageList)
-	router.HandlerFunc(http.MethodPost, "/api/v1/stages/query", api.HandleGetGlobalStage)
-	router.HandlerFunc(http.MethodPost, "/api/v1/stages/info", api.HandleGetStageInfo)
+	// Directory browsing
+	router.HandlerFunc(http.MethodGet, "/api/v1/directories/list", api.HandleGetDirList)
+	router.HandlerFunc(http.MethodPost, "/api/v1/directories/query", api.HandleGetGlobalDirectory)
+	router.HandlerFunc(http.MethodPost, "/api/v1/directories/info", api.HandleGetDirInfo)
 
 	// Payload submission
 	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/text", api.HandleUploadTextFile)
-	// router.HandlerFunc(http.MethodPost, "/api/v1/payloads/file", api.HandleUploadFile)
+	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/file", api.HandleUploadFile)
 
 	return router
 }

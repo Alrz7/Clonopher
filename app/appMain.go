@@ -1,84 +1,40 @@
 package app
 
 import (
-	"clonopher/api"
-	"clonopher/app/burrow"
 	"clonopher/app/config"
 	"clonopher/app/core"
 	"clonopher/internal"
-	"clonopher/internal/loggy"
-	"context"
+	"clonopher/internal/fileSystem"
 	"path/filepath"
-	"sync"
 )
 
-func Main() {
+func Main() error {
 	var err error
-	config.Default.App.AppConfigDir, err = internal.SetAppDir()
+	config.Default.App.AppConfigDir, err = fileSystem.SetAppDir()
 	if err != nil {
-		loggy.Fatal(err)
+		return err
 	}
-	config.Default.Setup(filepath.Join(config.Default.App.AppConfigDir, "clonopher.config.yaml"))
-
-	payloads, ok, err := SetConfig()
+	loadedDefaultConfig, err = config.Default.Setup(filepath.Join(config.Default.App.AppConfigDir, internal.ConfigFileName))
 	if err != nil {
-		loggy.Fatal(err)
+		return err
 	}
-
-	for head, path := range config.Default.App.Heads {
-		_, err := burrow.NewGlobal(head, path)
-		if err != nil {
-			loggy.Fatal(err)
-		}
-	}
-
-	err = core.ExistingCls.LoadExistingClassifiers(filepath.Join(config.Default.App.AppConfigDir, internal.ClsDirName))
+	err = core.ExistingCls.LoadExistingClassifiers(filepath.Join(config.Default.App.AppConfigDir, fileSystem.ClsDirName))
 	if err != nil {
-		loggy.Fatal(err)
+		return err
 	}
 
-	switch config.Default.App.RunMode {
-	case internal.CliMode, internal.DryRunMode:
-		if payloads == nil || !ok {
-			return
-		}
-
-		done := make(chan struct{})
-		tui, err := core.StartPayloadTUI(done, config.Default.Cli.LogLevel)
-		if err != nil {
-			loggy.Fatal(err)
-		}
-
-		wg := sync.WaitGroup{}
-		for _, p := range payloads {
-			run := func() {
-				_, err := p.Serve()
-				if err != nil {
-					loggy.Error(err)
-				}
-			}
-			wg.Go(run)
-		}
-
-		wg.Wait()
-
-		close(done)
-		if err := tui.Wait(); err != nil {
-			loggy.Fatal(err)
-		}
-
-	case internal.ApiMode:
-		if !ok {
-			return
-		}
-		ctx, cancel := context.WithCancel(context.Background())
-		apiConf := api.ApiConfig{
-			Ctx:     ctx,
-			Close:   cancel,
-			Options: &config.Default,
-		}
-		apiConf.Run()
-	default:
-		loggy.Fatalf("run mode [%v] is NOT valid! use -h or --help to see the options.", config.Default.App.RunMode)
+	err = fileSystem.GlobalStagings.LoadExistingStagings()
+	if err != nil {
+		return err
 	}
+
+	setRootFlags()
+	setCliFlags()
+	setApiFlags()
+	rootCmd.AddCommand(apiCmd, cliCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		return err
+	}
+	return nil
 }

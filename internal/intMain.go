@@ -4,6 +4,7 @@ type Envelope map[string]any
 
 const (
 	Action         = "action"
+	ConfigFileName = "clonopher.config.yaml"
 	HelperFileName = ".clonopher.yaml"
 	ActMove        = "ACT_MOVE"
 	ActCreateNew   = "ACT_CREATE_NEW"

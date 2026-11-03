@@ -34,7 +34,7 @@ export interface PayloadStatus {
   actions: string[];
   logs: NormalizedPayloadLog[];
   paths: string[];
-  stagePath: string;
+  DirPath: string;
   startedAt?: string;
   updatedAt?: string;
   source?: "api" | "demo";
@@ -47,8 +47,8 @@ export interface NormalizedPayloadLog {
   timestamp?: string;
 }
 
-export interface StageInfo {
-  stage_id?: string;
+export interface DirInfo {
+  dirId?: string;
   path?: string;
   created_at?: string;
   updated_at?: string;
@@ -58,11 +58,11 @@ export interface StageInfo {
   modifier?: { provider: string; model: string } | null;
 }
 
-export interface StageSnapshot {
+export interface SnapShot {
   path: string;
-  substages: Record<string, StageSnapshot>;
+  children: Record<string, SnapShot>;
   existingFiles: string[];
-  info?: StageInfo | null;
+  info?: DirInfo | null;
 }
 
 export interface PayloadStatsResult {
@@ -71,21 +71,21 @@ export interface PayloadStatsResult {
   warning?: string;
 }
 
-export interface StageListResult {
+export interface DirectoryListResult {
   list: string[];
   source: "api" | "demo";
   warning?: string;
 }
 
-export interface SelectedStageResult {
-  selected: StageSnapshot;
+export interface SelectedDirectoryResult {
+  selected: SnapShot;
   list: string[];
   source: "api" | "demo";
   warning?: string;
 }
 
-export interface StageInfoResult {
-  info: StageInfo | null;
+export interface DirInfoResult {
+  info: DirInfo | null;
   source: "api" | "demo";
   warning?: string;
 }
@@ -94,7 +94,7 @@ export interface ApiEnvelope {
   payloads?: unknown;
   list?: unknown;
   selected?: unknown;
-  stage?: unknown;
+  directory?: unknown;
   info?: unknown;
   [key: string]: unknown;
 }

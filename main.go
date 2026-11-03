@@ -1,7 +1,12 @@
 package main
 
-import "clonopher/app"
+import (
+	"clonopher/app"
+	"clonopher/internal/loggy"
+)
 
 func main() {
-	app.Main()
+	if err := app.Main(); err != nil {
+		loggy.Fatal(err)
+	}
 }

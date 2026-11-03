@@ -18,7 +18,7 @@ func (cls *CustomCls) Apply(p *Payload, req *providers.JevRequest) error {
 		criteria[key] = crt.Description
 	}
 	if cls.AddRoots {
-		for rootName, root := range p.Stage.Roots {
+		for rootName, root := range p.Dir.Children {
 			infoOptions := helpers.InfoOptions{
 				&helpers.InfoOption{Info: `name: %v`, Options: []any{rootName}},
 				&helpers.InfoOption{Info: `path: %v`, Options: []any{root.Path}},
@@ -41,7 +41,7 @@ func (cls *CustomCls) Resolve(p *Payload, ac *Actions, resp *providers.JevRespon
 		return loggy.Sayf("answer not found or the given Key was wrong")
 	}
 
-	Next, ok := p.Stage.Roots[answer.Choice]
+	Next, ok := p.Dir.Children[answer.Choice]
 	if ok {
 		action := ActMove{
 			ShouldReServe: true,

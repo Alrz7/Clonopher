@@ -1,4 +1,4 @@
-// import { demoStageNames, demoStageTree } from "./demo-data";
+// import { demoDirectoryNames, demoDirectoryTree } from "./demo-data";
 import type {
   ApiEnvelope,
   NormalizedPayloadLog,
@@ -6,11 +6,11 @@ import type {
   PayloadStatsResult,
   PayloadStatus,
   PayloadState,
-  SelectedStageResult,
-  StageInfo,
-  StageInfoResult,
-  StageListResult,
-  StageSnapshot,
+  SelectedDirectoryResult,
+  DirInfo,
+  DirInfoResult,
+  DirectoryListResult,
+  SnapShot,
 } from "./types";
 
 const API = "/api/v1";
@@ -87,7 +87,7 @@ function normalizePayload(
   const actions = arrayValue(valueOf(p, "actions", "Actions")).map((item) =>
     String(item),
   );
-  const stage = record(valueOf(p, "stage", "Stage"));
+  const directory = record(valueOf(p, "directory", "Directory"));
 
   return {
     id: stringValue(valueOf(p, "id", "ID"), fallbackId || `payload-${index}`),
@@ -101,9 +101,9 @@ function normalizePayload(
     actions,
     logs,
     paths: arrayValue(valueOf(p, "road")).map((item) => String(item)),
-    stagePath: stringValue(
+    DirPath: stringValue(
       valueOf(p, "path"),
-      stringValue(valueOf(stage, "path", "Path"), "—"),
+      stringValue(valueOf(directory, "path", "Path"), "—"),
     ),
     startedAt: stringValue(valueOf(p, "startedAt", "StartedAt")) || undefined,
     updatedAt: stringValue(valueOf(p, "updatedAt", "UpdatedAt")) || undefined,
@@ -159,68 +159,75 @@ export async function getPayloadStats(): Promise<PayloadStatsResult> {
   // }
 }
 
-export async function getStageList(): Promise<StageListResult> {
+export async function getDirectoryList(): Promise<DirectoryListResult> {
   // try {
-  const raw = record(await requestJson<ApiEnvelope>(`${API}/stages/list`));
-  const listRaw = valueOf(raw, "list", "List", "stages", "Stages");
+  const raw = record(await requestJson<ApiEnvelope>(`${API}/directories/list`));
+  const listRaw = valueOf(raw, "list", "List", "directories", "Directories");
   const list = arrayValue(listRaw)
     .map((item) => {
       if (typeof item === "string") return item;
-      const stage = record(item);
-      return stringValue(valueOf(stage, "path", "Path", "name", "Name"));
+      const directory = record(item);
+      return stringValue(valueOf(directory, "path", "Path", "name", "Name"));
     })
     .filter(Boolean);
   return { list, source: "api" };
   // } catch (error) {
   // return {
-  //   list: [...demoStageNames],
+  //   list: [...demoDirectoryNames],
   //   source: "demo",
   //   warning:
   //     error instanceof Error
   //       ? error.message
-  //       : "The Stage API is unavailable.",
+  //       : "The Directory API is unavailable.",
   // };
   // }
 }
 
-function normalizeStage(input: unknown, fallbackPath: string): StageSnapshot {
-  const stage = record(input);
-  const roots = record(
-    valueOf(stage, "substages", "Substages", "roots", "Roots"),
-  );
+function normalizeDirectory(input: unknown, fallbackPath: string): SnapShot {
+  const directory = record(input);
+  const roots = record(valueOf(directory, "children"));
   const files = arrayValue(
-    valueOf(stage, "existingFiles", "ExistingFiles", "files", "Files"),
+    valueOf(directory, "existingFiles", "ExistingFiles", "files", "Files"),
   ).map(String);
-  const normalizedRoots: Record<string, StageSnapshot> = {};
+  const normalizedRoots: Record<string, SnapShot> = {};
 
   for (const [name, child] of Object.entries(roots)) {
-    normalizedRoots[name] = normalizeStage(child, `${fallbackPath}/${name}`);
+    normalizedRoots[name] = normalizeDirectory(
+      child,
+      `${fallbackPath}/${name}`,
+    );
   }
 
-  const infoRaw = valueOf(stage, "info", "Info");
+  const infoRaw = valueOf(directory, "info", "Info");
   return {
-    path: stringValue(valueOf(stage, "path", "Path"), fallbackPath),
-    substages: normalizedRoots,
+    path: stringValue(valueOf(directory, "path", "Path"), fallbackPath),
+    children: normalizedRoots,
     existingFiles: files,
     info:
       infoRaw && typeof infoRaw === "object"
-        ? (infoRaw as StageSnapshot["info"])
+        ? (infoRaw as SnapShot["info"])
         : undefined,
   };
 }
 
-export async function getGlobalStage(
+export async function getGlobalDirectory(
   path: string,
-): Promise<SelectedStageResult> {
+): Promise<SelectedDirectoryResult> {
   // try {
   const raw = record(
-    await requestJson<ApiEnvelope>(`${API}/stages/query`, {
+    await requestJson<ApiEnvelope>(`${API}/directories/query`, {
       method: "POST",
       body: JSON.stringify({ select: path }),
     }),
   );
-  const selected = valueOf(raw, "selected", "Selected", "stage", "Stage");
-  const listRaw = valueOf(raw, "list", "List", "stages", "Stages");
+  const selected = valueOf(
+    raw,
+    "selected",
+    "Selected",
+    "directory",
+    "Directory",
+  );
+  const listRaw = valueOf(raw, "list", "List", "directories", "Directories");
   const list = arrayValue(listRaw)
     .map((item) =>
       typeof item === "string"
@@ -230,36 +237,38 @@ export async function getGlobalStage(
     .filter(Boolean);
 
   if (!selected || typeof selected !== "object")
-    throw new Error("API response did not contain a selected Stage snapshot.");
+    throw new Error(
+      "API response did not contain a selected Directory snapshot.",
+    );
 
   return {
-    selected: normalizeStage(selected, path),
+    selected: normalizeDirectory(selected, path),
     list: list.length ? list : [path],
     source: "api",
   };
   // } catch (error) {
   //   return {
-  //     selected: findDemoStage(path) ?? demoStageTree,
-  //     list: [...demoStageNames],
+  //     selected: findDemoDirectory(path) ?? demoDirectoryTree,
+  //     list: [...demoDirectoryNames],
   //     source: "demo",
   //     warning:
   //       error instanceof Error
   //         ? error.message
-  //         : "The Stage API is unavailable.",
+  //         : "The Directory API is unavailable.",
   //   };
   // }
 }
 
-// function findDemoStage(pathOrName: string): StageSnapshot | undefined {
-//   if (!pathOrName || pathOrName.toLowerCase() === "root") return demoStageTree;
+// function findDemoDirectory(pathOrName: string): DirectorySnapshot | undefined {
+//   if (!pathOrName || pathOrName.toLowerCase() === "root") return demoDirectoryTree;
 
 //   const wanted = pathOrName
 //     .replaceAll("\\", "/")
 //     .replace(/\/$/, "")
 //     .toLowerCase();
 
-//   function visit(stage: StageSnapshot): StageSnapshot | undefined {
-//     for (const [name, child] of Object.entries(stage.substages ?? {})) {
+//   function visit(directory: DirectorySnapshot): DirectorySnapshot | undefined {
+//     for (const [name, child] of Object.entries(directory.children ?? {})) {
 //       const childPath = child.path
 //         .replaceAll("\\", "/")
 //         .replace(/\/$/, "")
@@ -276,10 +285,10 @@ export async function getGlobalStage(
 //     return undefined;
 //   }
 
-//   return visit(demoStageTree);
+//   return visit(demoDirectoryTree);
 // }
 
-function normalizeStageInfo(input: unknown): StageInfo | null {
+function normalizeDirInfo(input: unknown): DirInfo | null {
   if (!input || typeof input !== "object") return null;
   const info = record(input);
   const creatorRaw = valueOf(info, "creator", "Creator");
@@ -294,8 +303,8 @@ function normalizeStageInfo(input: unknown): StageInfo | null {
   };
 
   return {
-    stage_id: stringValue(
-      valueOf(info, "stage_id", "StageID", "stageId", "StageId"),
+    dirId: stringValue(
+      valueOf(info, "dirId", "DirectoryID", "dir_id", "DirectoryId"),
     ),
     path: stringValue(valueOf(info, "path", "Path")),
     created_at: stringValue(
@@ -311,21 +320,21 @@ function normalizeStageInfo(input: unknown): StageInfo | null {
   };
 }
 
-// function findDemoInfo(pathOrName: string): StageInfo | null {
-//   const stage = findDemoStage(pathOrName);
-//   return stage?.info ?? null;
+// function findDemoInfo(pathOrName: string): DirInfo | null {
+//   const directory = findDemoDirectory(pathOrName);
+//   return directory?.info ?? null;
 // }
 
-export async function getStageInfo(path: string): Promise<StageInfoResult> {
+export async function getDirInfo(path: string): Promise<DirInfoResult> {
   // try {
   const raw = record(
-    await requestJson<ApiEnvelope>(`${API}/stages/info`, {
+    await requestJson<ApiEnvelope>(`${API}/directories/info`, {
       method: "POST",
       body: JSON.stringify({ path }),
     }),
   );
   const info = valueOf(raw, "info", "Info");
-  return { info: normalizeStageInfo(info), source: "api" };
+  return { info: normalizeDirInfo(info), source: "api" };
   // } catch (error) {
   //   return {
   //     info: findDemoInfo(path),
@@ -333,16 +342,15 @@ export async function getStageInfo(path: string): Promise<StageInfoResult> {
   //     warning:
   //       error instanceof Error
   //         ? error.message
-  //         : "The Stage info API is unavailable.",
+  //         : "The Directory info API is unavailable.",
   //   };
   // }
 }
 
 export async function getGlobalLogs(): Promise<NormalizedPayloadLog[]> {
-  const raw = record(
-    await requestJson<ApiEnvelope>(`${API}/logs`)
-  )
+  const raw = record(await requestJson<ApiEnvelope>(`${API}/logs`));
 
-  return arrayValue(valueOf(raw, 'logs', 'Logs'))
-    .map((item, index) => normalizeLog(item, index))
+  return arrayValue(valueOf(raw, "logs", "Logs")).map((item, index) =>
+    normalizeLog(item, index),
+  );
 }

@@ -18,51 +18,51 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-func (s *Stage) ReadHelperFile() error {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	return s.readHelperFileLocked()
+func (d *Directory) ReadHelperFile() error {
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
+	return d.readHelperFileLocked()
 }
 
-func (s *Stage) readHelperFileLocked() error {
-	if s.Info != nil {
+func (d *Directory) readHelperFileLocked() error {
+	if d.Info != nil {
 		return nil
 	}
 
-	if fileflow.Exists(filepath.Join(s.Path, internal.HelperFileName)) {
-		b, err := os.ReadFile(filepath.Join(s.Path, internal.HelperFileName))
+	if fileflow.Exists(filepath.Join(d.Path, internal.HelperFileName)) {
+		b, err := os.ReadFile(filepath.Join(d.Path, internal.HelperFileName))
 		if err != nil {
 			return err
 		}
-		var inf StageInfo
+		var inf DirInfo
 		err = yaml.Unmarshal(b, &inf)
 		if err != nil {
 			return err
 		}
 
-		if filepath.Clean(inf.Path) != filepath.Clean(s.Path) {
-			loggy.Warnf("helper file's path <%v> \n does NOT match the stage its placed in <%v> \n", inf.Path, s.Path)
+		if filepath.Clean(inf.Path) != filepath.Clean(d.Path) {
+			loggy.Warnf("helper file's path <%v> \n does NOT match the Directory its placed in <%v> \n", inf.Path, d.Path)
 		}
-		s.setInfoLocked(&inf)
+		d.setInfoLocked(&inf)
 	}
 	return nil
 }
 
-func (s *Stage) InferStageInfo(provider *providers.Provider) error {
-	s.Mu.RLock()
-	if s.Info != nil {
-		s.Mu.RUnlock()
+func (d *Directory) InferDirInfo(provider *providers.Provider) error {
+	d.Mu.RLock()
+	if d.Info != nil {
+		d.Mu.RUnlock()
 		return nil
 	}
 
 	loggy.AddNew("generating Info...", loggy.PdLInfo)
 	feed := helpers.InfoOptions{
-		&helpers.InfoOption{Info: `dir-path: %v`, Options: []any{s.Path}},
-		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(s.Roots))}},
-		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{s.Files}},
+		&helpers.InfoOption{Info: `dir-path: %v`, Options: []any{d.Path}},
+		&helpers.InfoOption{Info: `sub-dirs: %v`, Options: []any{slices.Collect(maps.Keys(d.Children))}},
+		&helpers.InfoOption{Info: `dir-files: %v`, Options: []any{d.Files}},
 	}.ConcatIfExists()
 
-	s.Mu.RUnlock()
+	d.Mu.RUnlock()
 
 	query := `You are Clonopher's directory metadata generator.
 
@@ -101,52 +101,52 @@ Rules:
 		return err
 	}
 
-	s.Mu.RLock()
-	sum := sha256.Sum256([]byte(s.Path + time.Now().String()))
+	d.Mu.RLock()
+	sum := sha256.Sum256([]byte(d.Path + time.Now().String()))
 	id := hex.EncodeToString(sum[:])
 
-	var inf = StageInfo{Path: s.Path,
+	var inf = DirInfo{Path: d.Path,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Brief:     respContent,
-		Modifier:  &InfoProvider{Provider: provider.Name, Model: req.Model}, StageID: id}
+		Modifier:  &InfoProvider{Provider: provider.Name, Model: req.Model}, DirId: id}
 
-	loggy.AddNewf("Info generated! for %v <%v...>", loggy.PdLInfo, s.Path, respContent)
-	err = s.WriteNewHelperFile(s.Info)
+	loggy.AddNewf("Info generated! for %v <%v...>", loggy.PdLInfo, d.Path, respContent)
+	err = d.WriteNewHelperFile(d.Info)
 	if err != nil {
 		return err
 	}
-	s.Mu.RUnlock()
-	s.SetInfo(&inf)
+	d.Mu.RUnlock()
+	d.SetInfo(&inf)
 	return nil
 }
 
-// func (s *Stage) UpdateHelperFile() error {
-// 	b, err := yaml.Marshal(s.Info)
+// func (d *Directory) UpdateHelperFile() error {
+// 	b, err := yaml.Marshal(d.Info)
 // 	if err != nil {
 // 		return err
 // 	}
 // 	header := []byte("# This file is Managed by Clonopher. Manual edits may be overwritten.\n\n")
 // 	content := append(header, b...)
-// 	err = os.WriteFile(filepath.Join(s.Path, internal.HelperFileName), content, 0644)
+// 	err = os.WriteFile(filepath.Join(d.Path, internal.HelperFileName), content, 0644)
 // 	if err != nil {
 // 		return err
 // 	}
 // 	return nil
 // }
 
-func (s *Stage) WriteNewHelperFile(inf *StageInfo) error {
+func (d *Directory) WriteNewHelperFile(inf *DirInfo) error {
 	b, err := yaml.Marshal(inf)
 	if err != nil {
 		return err
 	}
 	header := []byte("# This file is Managed by Clonopher. Manual edits may be overwritten.\n\n")
 	content := append(header, b...)
-	err = s.Submit()
+	err = d.Submit()
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(s.Path, internal.HelperFileName)
+	path := filepath.Join(d.Path, internal.HelperFileName)
 	err = os.WriteFile(path, content, 0644)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (s *Stage) WriteNewHelperFile(inf *StageInfo) error {
 	return nil
 }
 
-func (s *StageInfo) Render() string {
+func (s *DirInfo) Render() string {
 	if s == nil {
 		return ""
 	}

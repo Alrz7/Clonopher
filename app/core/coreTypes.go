@@ -7,6 +7,8 @@ import (
 	"clonopher/internal"
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
+	"time"
 )
 
 // payload is a high value load that is carried by a worker;
@@ -14,9 +16,9 @@ import (
 type Payload struct {
 	Id          string
 	Name        string
-	Src         string
+	Srcs        []string
 	Head        string
-	Stage       *burrow.Stage
+	Dir         *burrow.Directory
 	Info        *ObjectInfo
 	JevProvider *providers.Provider
 	LlmProvider *providers.Provider
@@ -64,27 +66,27 @@ var ExistingCls = ClsConfig{
 	Classifiers: map[string]*CustomCls{},
 }
 
-func New(c *config.Config, name, head, src, desc, policy, runMode string) (*Payload, error) {
+func New(c *config.Config, name, head string, src []string, desc, policy, runMode string) (*Payload, error) {
 	// need to do the validation here
-	stage, ok := burrow.GetFromGlobals(head)
+	dir, ok := burrow.GetFromGlobals(head)
 	if !ok {
 		var err error
-		stage, err = burrow.NewGlobal("", head)
+		dir, err = burrow.NewGlobal("", head)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	sum := sha256.Sum256([]byte(name + head + src + policy + runMode))
+	sum := sha256.Sum256([]byte(name + head + strings.Join(src, "-") + policy + runMode + time.Now().String()))
 	id := hex.EncodeToString(sum[:])
 
 	Payload := Payload{
 		Id:          id,
 		Head:        head,
 		Name:        name,
-		Src:         src,
+		Srcs:        src,
 		Info:        &ObjectInfo{},
-		Stage:       stage,
+		Dir:         dir,
 		JevProvider: c.GetActiveJevProvider(),
 		LlmProvider: c.GetActiveLlmProvider(),
 		Options: &Options{
@@ -92,7 +94,7 @@ func New(c *config.Config, name, head, src, desc, policy, runMode string) (*Payl
 			RunMode:      runMode,
 		},
 	}
-	Stats.AddNew(id, name, stage)
+	Stats.AddNew(id, name, dir)
 
 	return &Payload, nil
 }

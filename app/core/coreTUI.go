@@ -56,7 +56,7 @@ type payloadTUIRow struct {
 	id         string
 	name       string
 	state      PayloadState
-	stagePath  string
+	DirPath    string
 	lastAction string
 	iteration  int
 	logs       []Log
@@ -379,7 +379,7 @@ func (m payloadTUIModel) View() string {
 			}
 			state = payloadTIState.Render(state)
 
-			path := row.stagePath
+			path := row.DirPath
 			if path == "" {
 				path = "—"
 			}
@@ -470,9 +470,9 @@ func readPayloadTUIRows() []payloadTUIRow {
 			logs:       append([]Log(nil), status.Logs...),
 		}
 
-		if status.Stage != nil {
-			// Stage.Path is expected to be immutable after construction.
-			row.stagePath = status.Stage.Path
+		if status.Directory != nil {
+			// Directory.Path is expected to be immutable after construction.
+			row.DirPath = status.Directory.Path
 		}
 
 		status.Mu.RUnlock()
@@ -555,7 +555,7 @@ func printPayloadResults(logLevel string) {
 			marker = payloadTIWarn.Render("?")
 		}
 
-		finalPath := row.stagePath
+		finalPath := row.DirPath
 		if row.name != "" && finalPath != "" {
 			finalPath = filepath.Join(finalPath, row.name)
 		}

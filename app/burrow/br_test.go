@@ -5,9 +5,9 @@ import (
 )
 
 func TestMain(t *testing.T) {
-	b := Stage{
-		Path:  "/home/alireza/GoPrj/Clonopher/tmp",
-		Roots: make(map[string]*Stage),
+	b := Directory{
+		Path:     "/home/alireza/GoPrj/Clonopher/tmp",
+		Children: make(map[string]*Directory),
 	}
 	err := b.Explore()
 	if err != nil {

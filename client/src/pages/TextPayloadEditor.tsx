@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { LoaderCircle, Send } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from "react";
+import { LoaderCircle, Send } from "lucide-react";
 
 export type GlobalHead = string;
 
@@ -10,8 +10,8 @@ export type TextPayloadUploadResponse = {
 
 type JsonRecord = Record<string, unknown>;
 
-type FileType = 'md' | 'txt' | 'custom';
-type EditorMode = 'content' | 'description';
+type FileType = "md" | "txt" | "custom";
+type EditorMode = "content" | "description";
 
 type TextPayloadEditorProps = {
   /** Override the head-list endpoint if the backend route changes. */
@@ -22,8 +22,8 @@ type TextPayloadEditorProps = {
 };
 
 function asRecord(value: unknown): JsonRecord {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? value as JsonRecord
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonRecord)
     : {};
 }
 
@@ -35,42 +35,63 @@ function firstDefined(source: JsonRecord, ...keys: string[]): unknown {
 }
 
 function messageFromErrorBody(body: JsonRecord, fallback: string): string {
-  const error = firstDefined(body, 'error', 'Error');
-  if (typeof error === 'string' && error.trim()) return error;
-  if (error && typeof error === 'object') {
-    const message = firstDefined(asRecord(error), 'message', 'Message');
-    if (typeof message === 'string' && message.trim()) return message;
+  const error = firstDefined(body, "error", "Error");
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    const message = firstDefined(asRecord(error), "message", "Message");
+    if (typeof message === "string" && message.trim()) return message;
   }
-  const message = firstDefined(body, 'message', 'Message');
-  return typeof message === 'string' && message.trim() ? message : fallback;
+  const message = firstDefined(body, "message", "Message");
+  return typeof message === "string" && message.trim() ? message : fallback;
 }
 
-/** Fetch available global Stage heads from the existing Stage-list API. */
+/** Fetch available global Directory heads from the existing Directory-list API. */
 export async function fetchGlobalHeads(
-  endpoint = '/api/v1/stages/list',
+  endpoint = "/api/v1/directories/list",
 ): Promise<GlobalHead[]> {
   const response = await fetch(endpoint, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: "application/json" },
   });
   const body = asRecord(await response.json().catch(() => ({})));
 
   if (!response.ok) {
-    throw new Error(messageFromErrorBody(body, `Could not load global stages (${response.status}).`));
+    throw new Error(
+      messageFromErrorBody(
+        body,
+        `Could not load global directories (${response.status}).`,
+      ),
+    );
   }
 
-  const envelope = asRecord(firstDefined(body, 'data', 'Data'));
+  const envelope = asRecord(firstDefined(body, "data", "Data"));
   const source = Object.keys(envelope).length ? envelope : body;
-  const rawList = firstDefined(source, 'list', 'List', 'stages', 'Stages', 'heads', 'Heads');
+  const rawList = firstDefined(
+    source,
+    "list",
+    "List",
+    "directories",
+    "Directories",
+    "heads",
+    "Heads",
+  );
   if (!Array.isArray(rawList)) {
-    throw new Error('The Stage-list API response does not contain a list.');
+    throw new Error("The Directory-list API response does not contain a list.");
   }
 
   const heads = rawList
     .map((item): string => {
-      if (typeof item === 'string') return item.trim();
-      const stage = asRecord(item);
-      const path = firstDefined(stage, 'path', 'Path', 'name', 'Name', 'head', 'Head');
-      return typeof path === 'string' ? path.trim() : '';
+      if (typeof item === "string") return item.trim();
+      const directory = asRecord(item);
+      const path = firstDefined(
+        directory,
+        "path",
+        "Path",
+        "name",
+        "Name",
+        "head",
+        "Head",
+      );
+      return typeof path === "string" ? path.trim() : "";
     })
     .filter(Boolean);
 
@@ -79,44 +100,59 @@ export async function fetchGlobalHeads(
 
 /** Submit text content using the JSON shape expected by HandleUploadTextFile. */
 export async function uploadTextPayload(
-  input: { fileName: string; head: string; content: string; description: string },
-  endpoint = '/api/v1/payloads/text',
+  input: {
+    fileName: string;
+    head: string;
+    content: string;
+    description: string;
+  },
+  endpoint = "/api/v1/payloads/text",
 ): Promise<TextPayloadUploadResponse> {
   const response = await fetch(endpoint, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
+      Accept: "application/json",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
   });
   const body = asRecord(await response.json().catch(() => ({})));
 
   if (!response.ok) {
-    throw new Error(messageFromErrorBody(body, `Payload processing failed (${response.status}).`));
+    throw new Error(
+      messageFromErrorBody(
+        body,
+        `Payload processing failed (${response.status}).`,
+      ),
+    );
   }
 
-  const envelope = asRecord(firstDefined(body, 'data', 'Data'));
+  const envelope = asRecord(firstDefined(body, "data", "Data"));
   const source = Object.keys(envelope).length ? envelope : body;
-  const message = firstDefined(source, 'message', 'Message');
-  const address = firstDefined(source, 'address', 'Address');
+  const message = firstDefined(source, "message", "Message");
+  const address = firstDefined(source, "address", "Address");
 
   return {
-    message: typeof message === 'string' ? message : undefined,
-    address: typeof address === 'string' ? address : undefined,
+    message: typeof message === "string" ? message : undefined,
+    address: typeof address === "string" ? address : undefined,
   };
 }
 
 function normalizeExtension(extension: string): string {
-  return extension.trim().replace(/^\.+/, '').replace(/[^a-zA-Z0-9_-]/g, '');
+  return extension
+    .trim()
+    .replace(/^\.+/, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "");
 }
 
 function makeFileName(name: string, extension: string): string {
-  const base = name.trim().replace(/[\\/]/g, '-').replace(/\.+$/, '');
+  const base = name.trim().replace(/[\\/]/g, "-").replace(/\.+$/, "");
   const normalizedExtension = normalizeExtension(extension);
-  if (!base || !normalizedExtension) return '';
+  if (!base || !normalizedExtension) return "";
 
-  const withoutSelectedExtension = base.toLowerCase().endsWith(`.${normalizedExtension.toLowerCase()}`)
+  const withoutSelectedExtension = base
+    .toLowerCase()
+    .endsWith(`.${normalizedExtension.toLowerCase()}`)
     ? base.slice(0, -(normalizedExtension.length + 1))
     : base;
 
@@ -124,40 +160,46 @@ function makeFileName(name: string, extension: string): string {
 }
 
 export default function TextPayloadEditor({
-  headsEndpoint = '/api/v1/stages/list',
-  uploadEndpoint = '/api/v1/payloads/text',
+  headsEndpoint = "/api/v1/directories/list",
+  uploadEndpoint = "/api/v1/payloads/text",
   onProcessed,
 }: TextPayloadEditorProps) {
   const [heads, setHeads] = useState<GlobalHead[]>([]);
-  const [head, setHead] = useState('');
+  const [head, setHead] = useState("");
   const [isLoadingHeads, setIsLoadingHeads] = useState(true);
-  const [headsError, setHeadsError] = useState('');
-  const [name, setName] = useState('');
-  const [fileType, setFileType] = useState<FileType>('md');
-  const [customExtension, setCustomExtension] = useState('log');
-  const [content, setContent] = useState('');
-  const [description, setDescription] = useState('');
-  const [mode, setMode] = useState<EditorMode>('content');
+  const [headsError, setHeadsError] = useState("");
+  const [name, setName] = useState("");
+  const [fileType, setFileType] = useState<FileType>("md");
+  const [customExtension, setCustomExtension] = useState("log");
+  const [content, setContent] = useState("");
+  const [description, setDescription] = useState("");
+  const [mode, setMode] = useState<EditorMode>("content");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadHeads() {
       setIsLoadingHeads(true);
-      setHeadsError('');
+      setHeadsError("");
       try {
         const result = await fetchGlobalHeads(headsEndpoint);
         if (controller.signal.aborted) return;
         setHeads(result);
-        setHead((current) => result.includes(current) ? current : result[0] ?? '');
+        setHead((current) =>
+          result.includes(current) ? current : (result[0] ?? ""),
+        );
       } catch (caught) {
         if (controller.signal.aborted) return;
         setHeads([]);
-        setHead('');
-        setHeadsError(caught instanceof Error ? caught.message : 'Could not load global stages.');
+        setHead("");
+        setHeadsError(
+          caught instanceof Error
+            ? caught.message
+            : "Could not load global directories.",
+        );
       } finally {
         if (!controller.signal.aborted) setIsLoadingHeads(false);
       }
@@ -167,41 +209,51 @@ export default function TextPayloadEditor({
     return () => controller.abort();
   }, [headsEndpoint]);
 
-  const extension = fileType === 'custom' ? normalizeExtension(customExtension) : fileType;
+  const extension =
+    fileType === "custom" ? normalizeExtension(customExtension) : fileType;
   const finalFileName = makeFileName(name, extension);
-  const canSubmit = Boolean(head && finalFileName && content.trim()) && !isLoadingHeads && !headsError && !isSubmitting;
+  const canSubmit =
+    Boolean(head && finalFileName && content.trim()) &&
+    !isLoadingHeads &&
+    !headsError &&
+    !isSubmitting;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!heads.includes(head)) {
-      setError('Select a global Stage first.');
+      setError("Select a global Directory first.");
       return;
     }
     if (!finalFileName) {
-      setError('Enter a file name and a valid extension.');
+      setError("Enter a file name and a valid extension.");
       return;
     }
     if (!content.trim()) {
-      setError('Add some content before processing.');
-      setMode('content');
+      setError("Add some content before processing.");
+      setMode("content");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const result = await uploadTextPayload({
-        fileName: finalFileName,
-        head,
-        content,
-        description: description.trim(),
-      }, uploadEndpoint);
-      setSuccess(result.address || result.message || 'Payload processed.');
+      const result = await uploadTextPayload(
+        {
+          fileName: finalFileName,
+          head,
+          content,
+          description: description.trim(),
+        },
+        uploadEndpoint,
+      );
+      setSuccess(result.address || result.message || "Payload processed.");
       onProcessed?.(result);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Payload processing failed.');
+      setError(
+        caught instanceof Error ? caught.message : "Payload processing failed.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -236,13 +288,15 @@ export default function TextPayloadEditor({
             </select>
           </label>
 
-          {fileType === 'custom' && (
+          {fileType === "custom" && (
             <label className="text-payload__custom-field">
               <span className="field-label">EXTENSION</span>
               <input
                 className="text-payload__input"
                 value={customExtension}
-                onChange={(event) => setCustomExtension(event.target.value.replace(/^\.+/, ''))}
+                onChange={(event) =>
+                  setCustomExtension(event.target.value.replace(/^\.+/, ""))
+                }
                 placeholder="log"
                 autoComplete="off"
                 spellCheck={false}
@@ -258,56 +312,87 @@ export default function TextPayloadEditor({
             value={head}
             onChange={(event) => {
               setHead(event.target.value);
-              setError('');
-              setSuccess('');
+              setError("");
+              setSuccess("");
             }}
             disabled={isLoadingHeads || heads.length === 0}
           >
             <option value="">
-              {isLoadingHeads ? 'Loading stages…' : headsError ? 'Stages unavailable' : heads.length ? 'Select a stage' : 'No stages available'}
+              {isLoadingHeads
+                ? "Loading directories…"
+                : headsError
+                  ? "Directories unavailable"
+                  : heads.length
+                    ? "Select a directory"
+                    : "No directories available"}
             </option>
-            {heads.map((item) => <option key={item} value={item}>{item}</option>)}
+            {heads.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
           </select>
         </label>
       </div>
 
-      {headsError && <p className="text-payload__inline-message text-payload__inline-message--error" role="status">Could not load stages: {headsError}</p>}
+      {headsError && (
+        <p
+          className="text-payload__inline-message text-payload__inline-message--error"
+          role="status"
+        >
+          Could not load directories: {headsError}
+        </p>
+      )}
 
       <div className="text-payload__editor-toolbar">
-        <div className="text-payload__mode-switch" role="tablist" aria-label="Payload text mode">
+        <div
+          className="text-payload__mode-switch"
+          role="tablist"
+          aria-label="Payload text mode"
+        >
           <button
             type="button"
-            className={`button button-sm text-payload__mode-button${mode === 'content' ? ' is-active' : ''}`}
+            className={`button button-sm text-payload__mode-button${mode === "content" ? " is-active" : ""}`}
             role="tab"
-            aria-selected={mode === 'content'}
-            onClick={() => setMode('content')}
+            aria-selected={mode === "content"}
+            onClick={() => setMode("content")}
           >
             Content
           </button>
           <button
             type="button"
-            className={`button button-sm text-payload__mode-button${mode === 'description' ? ' is-active' : ''}`}
+            className={`button button-sm text-payload__mode-button${mode === "description" ? " is-active" : ""}`}
             role="tab"
-            aria-selected={mode === 'description'}
-            onClick={() => setMode('description')}
+            aria-selected={mode === "description"}
+            onClick={() => setMode("description")}
           >
             Description
           </button>
         </div>
         <span className="text-payload__editor-hint">
-          {mode === 'content' ? `${content.length.toLocaleString()} characters` : 'Optional classification context'}
+          {mode === "content"
+            ? `${content.length.toLocaleString()} characters`
+            : "Optional classification context"}
         </span>
       </div>
 
       <textarea
         className="text-payload__editor"
-        value={mode === 'content' ? content : description}
-        onChange={(event) => mode === 'content' ? setContent(event.target.value) : setDescription(event.target.value)}
-        placeholder={mode === 'content'
-          ? 'Write or paste the text you want Clonopher to process…'
-          : 'Add context about this text to help Clonopher classify it…'}
-        aria-label={mode === 'content' ? 'Payload content' : 'Payload description'}
-        spellCheck={mode === 'content'}
+        value={mode === "content" ? content : description}
+        onChange={(event) =>
+          mode === "content"
+            ? setContent(event.target.value)
+            : setDescription(event.target.value)
+        }
+        placeholder={
+          mode === "content"
+            ? "Write or paste the text you want Clonopher to process…"
+            : "Add context about this text to help Clonopher classify it…"
+        }
+        aria-label={
+          mode === "content" ? "Payload content" : "Payload description"
+        }
+        spellCheck={mode === "content"}
         autoCapitalize="off"
         autoComplete="off"
         autoCorrect="off"
@@ -315,13 +400,25 @@ export default function TextPayloadEditor({
 
       <div className="text-payload__submit-area">
         {(error || success) && (
-          <p className={`text-payload__feedback${error ? ' text-payload__feedback--error' : ' text-payload__feedback--success'}`} role="status" aria-live="polite">
+          <p
+            className={`text-payload__feedback${error ? " text-payload__feedback--error" : " text-payload__feedback--success"}`}
+            role="status"
+            aria-live="polite"
+          >
             {error || success}
           </p>
         )}
-        <button className="send-button text-payload__process" type="submit" disabled={!canSubmit}>
-          {isSubmitting ? <LoaderCircle className="text-payload__spin" size={16} /> : <Send size={15} />}
-          {isSubmitting ? 'Processing…' : 'Process'}
+        <button
+          className="send-button text-payload__process"
+          type="submit"
+          disabled={!canSubmit}
+        >
+          {isSubmitting ? (
+            <LoaderCircle className="text-payload__spin" size={16} />
+          ) : (
+            <Send size={15} />
+          )}
+          {isSubmitting ? "Processing…" : "Process"}
         </button>
       </div>
     </form>

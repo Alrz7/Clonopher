@@ -10,35 +10,35 @@ import (
 )
 
 // Fs-Helpers
-func (s *Stage) DropFileHere(src string) (string, error) {
-	dst := filepath.Join(s.Path, filepath.Base(src))
+func (d *Directory) DropFileHere(src string) (string, error) {
+	dst := filepath.Join(d.Path, filepath.Base(src))
 	return fileflow.Move(src, dst)
 }
 
-func (s *Stage) CopyFileHere(src string) (string, error) {
-	dst := filepath.Join(s.Path, filepath.Base(src))
+func (d *Directory) CopyFileHere(src string) (string, error) {
+	dst := filepath.Join(d.Path, filepath.Base(src))
 	return fileflow.Copy(src, dst)
 }
-func (s *Stage) SubmitDropFileHere(src string) (string, error) {
-	sErr := s.Submit()
+func (d *Directory) SubmitDropFileHere(src string) (string, error) {
+	sErr := d.Submit()
 	if sErr != nil {
 		return "", sErr
 	}
-	finalPath, dErr := s.DropFileHere(src)
+	finalPath, dErr := d.DropFileHere(src)
 	return finalPath, dErr
 }
 
-func (s *Stage) SubmitCopyFileHere(src string) (string, error) {
-	sErr := s.Submit()
+func (d *Directory) SubmitCopyFileHere(src string) (string, error) {
+	sErr := d.Submit()
 	if sErr != nil {
 		return "", sErr
 	}
-	finalPath, cErr := s.CopyFileHere(src)
+	finalPath, cErr := d.CopyFileHere(src)
 	return finalPath, cErr
 }
 
-func (s *Stage) Submit() error {
-	return os.MkdirAll(s.Path, 0755)
+func (d *Directory) Submit() error {
+	return os.MkdirAll(d.Path, 0755)
 }
 
 func ShouldSkip(dirname string) bool {
@@ -64,97 +64,97 @@ func ShouldSkip(dirname string) bool {
 
 // in-memmory helpers
 
-func (s *Stage) setRoots(roots map[string]*Stage) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
+func (d *Directory) setRoots(roots map[string]*Directory) {
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
 
-	s.setRootsLocked(roots)
+	d.setRootsLocked(roots)
 }
 
 // *-Locked helpers require the caller to hold s.Mu.
 
-func (s *Stage) setRootsLocked(roots map[string]*Stage) {
-	s.Roots = roots
+func (d *Directory) setRootsLocked(roots map[string]*Directory) {
+	d.Children = roots
 }
 
-func (s *Stage) AddRoot(rootName string, root *Stage) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
+func (d *Directory) AddRoot(rootName string, root *Directory) {
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
 
-	s.addRootLocked(rootName, root)
+	d.addRootLocked(rootName, root)
 }
 
-func (s *Stage) addRootLocked(rootName string, root *Stage) {
-	// TODO: If the root already exists, merge both StageInfo values
-	// through the LLM instead of blindly replacing the existing Stage.
-	s.Roots[rootName] = root
+func (d *Directory) addRootLocked(rootName string, root *Directory) {
+	// TODO: If the root already exists, merge both DirInfo values
+	// through the LLM instead of blindly replacing the existing Directory.
+	d.Children[rootName] = root
 }
 
-func (s *Stage) setFiles(files []string) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
+func (d *Directory) setFiles(files []string) {
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
 
-	s.setFilesLocked(files)
+	d.setFilesLocked(files)
 }
 
-func (s *Stage) setFilesLocked(files []string) {
-	s.Files = files
+func (d *Directory) setFilesLocked(files []string) {
+	d.Files = files
 }
 
-func (s *Stage) addFile(file string) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
+func (d *Directory) addFile(file string) {
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
 
-	s.addFileLocked(file)
+	d.addFileLocked(file)
 }
 
-func (s *Stage) addFileLocked(file string) {
-	s.Files = append(s.Files, file)
+func (d *Directory) addFileLocked(file string) {
+	d.Files = append(d.Files, file)
 }
 
-func (s *Stage) SetInfo(info *StageInfo) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
+func (d *Directory) SetInfo(info *DirInfo) {
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
 
-	s.setInfoLocked(info)
+	d.setInfoLocked(info)
 }
 
-func (s *Stage) setInfoLocked(info *StageInfo) {
-	s.Info = info
+func (d *Directory) setInfoLocked(info *DirInfo) {
+	d.Info = info
 }
 
-type SnpShot struct {
-	Path  string              `json:"path"`
-	Roots map[string]*SnpShot `json:"substages"`
-	Files []string            `json:"existingFiles"`
+type SnapShot struct {
+	Path     string               `json:"path"`
+	Children map[string]*SnapShot `json:"children"`
+	Files    []string             `json:"existingFiles"`
 }
 
-func (s *Stage) SnapShot(depth int) *SnpShot {
-	take := func(stage *Stage) *SnpShot {
-		var out = SnpShot{
-			Path:  stage.Path,
-			Roots: map[string]*SnpShot{},
-			Files: make([]string, len(stage.Files)),
+func (d *Directory) SnapShot(depth int) *SnapShot {
+	take := func(dir *Directory) *SnapShot {
+		var out = SnapShot{
+			Path:     dir.Path,
+			Children: map[string]*SnapShot{},
+			Files:    make([]string, len(dir.Files)),
 		}
-		copy(out.Files, stage.Files)
+		copy(out.Files, dir.Files)
 		return &out
 	}
 
-	s.Mu.RLock()
-	res := take(s)
+	d.Mu.RLock()
+	res := take(d)
 	if depth == 0 {
-		s.Mu.RUnlock()
+		d.Mu.RUnlock()
 		return res
 	}
-	var roots = map[string]*Stage{}
-	maps.Copy(roots, s.Roots)
-	s.Mu.RUnlock()
+	var roots = map[string]*Directory{}
+	maps.Copy(roots, d.Children)
+	d.Mu.RUnlock()
 
 	for rootName, root := range roots {
 		if root == nil {
 			continue
 		}
-		res.Roots[rootName] = root.SnapShot(depth - 1)
+		res.Children[rootName] = root.SnapShot(depth - 1)
 	}
 	return res
 }

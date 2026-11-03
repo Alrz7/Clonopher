@@ -1,7 +1,7 @@
 package core
 
 import (
-	"clonopher/internal"
+	"clonopher/internal/fileSystem"
 	"path/filepath"
 	"testing"
 )
@@ -20,7 +20,7 @@ import (
 // 		Info: &classifiers.ObjectInfo{
 // 			Description: "A Go-based rate-limiting middleware for Gin APIs, covering request throttling, HTTP 429 responses, and per-route rate limits.",
 // 		},
-// 		Stage:   burrow.New("/home/alireza/GoPrj/Clonopher/tmp/testing"),
+// 		Directory:   burrow.New("/home/alireza/GoPrj/Clonopher/tmp/testing"),
 // 		Options: ollamaTev,
 // 	}
 // 	err := Payload.Serve()
@@ -31,11 +31,11 @@ import (
 
 func TestLoadExistingClss(t *testing.T) {
 	cnf := ClsConfig{Classifiers: map[string]*CustomCls{}}
-	appdir, err := internal.SetAppDir()
+	appdir, err := fileSystem.SetAppDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = cnf.LoadExistingClassifiers(filepath.Join(appdir, internal.ClsDirName))
+	err = cnf.LoadExistingClassifiers(filepath.Join(appdir, fileSystem.ClsDirName))
 	if err != nil {
 		t.Fatal(err)
 	}

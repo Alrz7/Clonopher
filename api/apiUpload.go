@@ -4,10 +4,15 @@ import (
 	"clonopher/app/config"
 	"clonopher/app/core"
 	"clonopher/internal"
+	"clonopher/internal/fileSystem"
 	"clonopher/internal/loggy"
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +28,7 @@ func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	payload, err := core.New(&config.Default, entry.FileName, entry.Head, "", entry.Description, internal.PlcNone, internal.ApiMode)
+	payload, err := core.New(&config.Default, entry.FileName, entry.Head, []string{}, entry.Description, internal.PlcNone, internal.ApiMode)
 	if err != nil {
 		api.serverErrorResponse(w, r, err)
 		return
@@ -33,7 +38,7 @@ func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Reques
 		api.serverErrorResponse(w, r, err)
 		return
 	}
-	err = payload.Stage.Submit()
+	err = payload.Dir.Submit()
 	if err != nil {
 		api.serverErrorResponse(w, r, err)
 		return
@@ -53,160 +58,110 @@ func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// const (
-// 	maxUploadSize      int64 = 100 << 20 // 100 MiB
-// 	maxMultipartMemory int64 = 8 << 20   // 8 MiB
-// 	maxRequestOverhead int64 = 1 << 20   // 1 MiB
-// 	maxDescriptionSize       = 64 << 10  // 64 KiB
-// )
+func (api *ApiConfig) HandleUploadFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		api.methodNotAllowedResponse(w, r)
+		return
+	}
 
-// type uploadDraft struct {
-// 	ID           string `json:"id"`
-// 	OriginalName string `json:"original_name"`
-// 	Description  string `json:"description"`
-// 	Size         int64  `json:"size"`
-// 	Status       string `json:"status"`
-// }
+	const maxUploadSize = 100 << 20
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
-// func (api *ApiConfig) HandleUploadFile(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		w.Header().Set("Allow", http.MethodPost)
-// 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-// 		return
-// 	}
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		api.badRequestResponse(w, r, loggy.Say("Invalid multipart form or file too large"))
+		return
+	}
 
-// 	uploadDir := config.Default.App.DefaultUploadDir
-// 	if uploadDir == "" {
-// 		api.serverErrorResponse(w, r, loggy.Say("upload dir was not provided by config"))
-// 		return
-// 	}
-// 	uploadDir = filepath.Join(config.Default.App.DefaultUploadDir, internal.UploadDirName)
+	if r.MultipartForm != nil {
+		defer r.MultipartForm.RemoveAll()
+	}
 
-// 	r.Body = http.MaxBytesReader(
-// 		w, r.Body, maxUploadSize+maxRequestOverhead,
-// 	)
+	files := r.MultipartForm.File["file"]
+	names := r.MultipartForm.Value["filename"]
 
-// 	if err := r.ParseMultipartForm(maxMultipartMemory); err != nil {
-// 		if r.MultipartForm != nil {
-// 			_ = r.MultipartForm.RemoveAll()
-// 		}
+	if len(files) != 1 || len(names) != 1 {
+		api.badRequestResponse(w, r, loggy.Say("Exactly one file and filename are required"))
+		return
+	}
 
-// 		if _, err := errors.AsType[*http.MaxBytesError](err); err {
-// 			http.Error(
-// 				w, "request body too large",
-// 				http.StatusRequestEntityTooLarge,
-// 			)
-// 			return
-// 		}
+	filename := strings.TrimSpace(names[0])
+	filename = filepath.Base(strings.ReplaceAll(filename, `\\`, `/`))
 
-// 		http.Error(
-// 			w, "invalid multipart request",
-// 			http.StatusBadRequest,
-// 		)
-// 		return
-// 	}
+	if filename == "" || filename == "." || filename == ".." {
+		api.badRequestResponse(w, r, loggy.Say("Invalid filename"))
+		return
+	}
 
-// 	if r.MultipartForm != nil {
-// 		defer r.MultipartForm.RemoveAll()
-// 	}
+	src, err := files[0].Open()
+	if err != nil {
+		api.serverErrorResponse(w, r, loggy.Say("Cannot open uploaded file"))
+		return
+	}
+	defer src.Close()
 
-// 	description := strings.TrimSpace(r.FormValue("description"))
-// 	if len(description) > maxDescriptionSize {
-// 		http.Error(
-// 			w, "description too large",
-// 			http.StatusRequestEntityTooLarge,
-// 		)
-// 		return
-// 	}
+	uploadDir := config.Default.App.DefaultUploadDir
 
-// 	file, header, err := r.FormFile("file")
-// 	if err != nil {
-// 		http.Error(
-// 			w, "missing file field",
-// 			http.StatusBadRequest,
-// 		)
-// 		return
-// 	}
-// 	defer file.Close()
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		api.serverErrorResponse(w, r, loggy.Say("Cannot create upload directory"))
+		return
+	}
 
-// 	if err := os.MkdirAll(uploadDir, 0700); err != nil {
-// 		http.Error(
-// 			w, "storage unavailable",
-// 			http.StatusInternalServerError,
-// 		)
-// 		return
-// 	}
+	dst, actualName, err := createUniqueUploadFile(uploadDir, filename)
+	if err != nil {
+		api.serverErrorResponse(w, r, loggy.Say("Cannot create destination file"))
+		return
+	}
 
-// 	dst, err := os.CreateTemp(uploadDir, "payload-*")
-// 	if err != nil {
-// 		http.Error(
-// 			w, "cannot create upload",
-// 			http.StatusInternalServerError,
-// 		)
-// 		return
-// 	}
+	size, copyErr := io.Copy(dst, src)
+	closeErr := dst.Close()
 
-// 	stagedPath := dst.Name()
-// 	id := filepath.Base(stagedPath)
-// 	metadataPath := filepath.Join(uploadDir, id+".json")
+	if copyErr != nil || closeErr != nil {
+		os.Remove(filepath.Join(uploadDir, actualName))
+		api.serverErrorResponse(w, r, loggy.Say("Cannot save uploaded file"))
+		return
+	}
 
-// 	keep := false
-// 	defer func() {
-// 		if !keep {
-// 			_ = os.Remove(stagedPath)
-// 			_ = os.Remove(metadataPath)
-// 		}
-// 	}()
+	err = fileSystem.GlobalStagings.AddNewStaging(actualName, filepath.Join(uploadDir, actualName))
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
 
-// 	size, copyErr := io.Copy(
-// 		dst, io.LimitReader(file, maxUploadSize+1),
-// 	)
-// 	closeErr := dst.Close()
+	res := internal.Envelope{
+		"name": actualName,
+		"size": size,
+	}
 
-// 	if copyErr != nil || closeErr != nil {
-// 		http.Error(
-// 			w, "failed to save upload",
-// 			http.StatusInternalServerError,
-// 		)
-// 		return
-// 	}
+	api.writeJSON(w, http.StatusCreated, res, nil)
+}
 
-// 	if size > maxUploadSize {
-// 		http.Error(
-// 			w, "file too large",
-// 			http.StatusRequestEntityTooLarge,
-// 		)
-// 		return
-// 	}
+func createUniqueUploadFile(dir, filename string) (*os.File, string, error) {
+	ext := filepath.Ext(filename)
+	name := strings.TrimSuffix(filename, ext)
 
-// 	draft := uploadDraft{
-// 		ID:           id,
-// 		OriginalName: header.Filename,
-// 		Description:  description,
-// 		Size:         size,
-// 		Status:       "uploaded",
-// 	}
+	for i := 0; i < 10000; i++ {
+		candidate := filename
 
-// 	metadata, err := json.MarshalIndent(draft, "", "  ")
-// 	if err != nil {
-// 		http.Error(
-// 			w, "cannot encode metadata",
-// 			http.StatusInternalServerError,
-// 		)
-// 		return
-// 	}
+		if i > 0 {
+			candidate = fmt.Sprintf("%s (%d)%s", name, i, ext)
+		}
 
-// 	if err := os.WriteFile(metadataPath, metadata, 0600); err != nil {
-// 		http.Error(
-// 			w, "cannot save metadata",
-// 			http.StatusInternalServerError,
-// 		)
-// 		return
-// 	}
+		path := filepath.Join(dir, candidate)
 
-// 	keep = true
+		file, err := os.OpenFile(
+			path,
+			os.O_WRONLY|os.O_CREATE|os.O_EXCL,
+			0644,
+		)
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusCreated)
-// 	_ = json.NewEncoder(w).Encode(draft)
-// }
+		if err == nil {
+			return file, candidate, nil
+		}
+
+		if !errors.Is(err, os.ErrExist) {
+			return nil, "", err
+		}
+	}
+
+	return nil, "", errors.New("too many filename collisions")
+}

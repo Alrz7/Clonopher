@@ -1,27 +1,28 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
-export type LogFilter = 'all' | 'error' | 'warn' | 'info'
+export type LogFilter = "all" | "error" | "warn" | "info";
 
 interface AppStore {
-  logsOpen: boolean
-  logFilter: LogFilter
-  logSearch: string
-  selectedStagePath: string | null
-  setLogsOpen: (open: boolean) => void
-  toggleLogs: () => void
-  setLogFilter: (filter: LogFilter) => void
-  setLogSearch: (search: string) => void
-  setSelectedStagePath: (path: string | null) => void
+  logsOpen: boolean;
+  logFilter: LogFilter;
+  logSearch: string;
+  selectedDirectoryPath: string | null;
+  setLogsOpen: (open: boolean) => void;
+  toggleLogs: () => void;
+  setLogFilter: (filter: LogFilter) => void;
+  setLogSearch: (search: string) => void;
+  setSelectedDirectoryPath: (path: string | null) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
   logsOpen: false,
-  logFilter: 'all',
-  logSearch: '',
-  selectedStagePath: null,
+  logFilter: "all",
+  logSearch: "",
+  selectedDirectoryPath: null,
   setLogsOpen: (logsOpen) => set({ logsOpen }),
   toggleLogs: () => set((state) => ({ logsOpen: !state.logsOpen })),
   setLogFilter: (logFilter) => set({ logFilter }),
   setLogSearch: (logSearch) => set({ logSearch }),
-  setSelectedStagePath: (selectedStagePath) => set({ selectedStagePath }),
-}))
+  setSelectedDirectoryPath: (selectedDirectoryPath) =>
+    set({ selectedDirectoryPath }),
+}));

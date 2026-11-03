@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   getGlobalLogs,
-  getGlobalStage,
+  getGlobalDirectory,
   getPayloadStats,
-  getStageInfo,
-  getStageList,
+  getDirInfo,
+  getDirectoryList,
 } from "./api";
 
 export function usePayloadStats() {
@@ -26,29 +26,29 @@ export function useGLobalLogs() {
     staleTime: 1_000,
   });
 }
-export function useStageList() {
+export function useDirectoryList() {
   return useQuery({
-    queryKey: ["stage-list"],
-    queryFn: getStageList,
+    queryKey: ["directory-list"],
+    queryFn: getDirectoryList,
     refetchInterval: 12_000,
     staleTime: 5_000,
   });
 }
 
-export function useGlobalStage(path: string) {
+export function useGlobalDirectory(path: string) {
   return useQuery({
-    queryKey: ["global-stage", path],
-    queryFn: () => getGlobalStage(path),
+    queryKey: ["global-directory", path],
+    queryFn: () => getGlobalDirectory(path),
     enabled: Boolean(path),
     refetchInterval: 12_000,
     staleTime: 5_000,
   });
 }
 
-export function useStageInfo(path: string) {
+export function useDirInfo(path: string) {
   return useQuery({
-    queryKey: ["stage-info", path],
-    queryFn: () => getStageInfo(path),
+    queryKey: ["directory-info", path],
+    queryFn: () => getDirInfo(path),
     enabled: Boolean(path),
     staleTime: 10_000,
     refetchInterval: 15_000,

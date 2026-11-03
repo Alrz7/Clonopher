@@ -14,7 +14,8 @@ type Config struct {
 }
 
 type App struct {
-	Heads            map[string]string `koanf:"heads"`
+	Roots            map[string]string `koanf:"roots"`
+	DefaultRoot      string            `koanf:"default_root"`
 	AppConfigDir     string            `koanf:"config_dir"`
 	DefaultUploadDir string            `koanf:"default_upload_dir"`
 	Version          string            `koanf:"version"`

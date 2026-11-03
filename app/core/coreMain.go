@@ -15,24 +15,24 @@ func (p *Payload) Serve() (string, error) {
 	run := func() (bool, error) {
 		p.AddIteration()
 
-		if !p.Stage.Explored.Load() {
+		if !p.Dir.Explored.Load() {
 			p.SetState(PayloadStateExploring)
-			err := p.Stage.Explore()
+			err := p.Dir.Explore()
 			if err != nil {
 				return false, err
 			}
 		}
 
-		p.Stage.Mu.RLock()
-		if p.Stage.Info == nil {
-			p.Stage.Mu.RUnlock()
+		p.Dir.Mu.RLock()
+		if p.Dir.Info == nil {
+			p.Dir.Mu.RUnlock()
 			p.SetState(PayloadStateInferring)
-			err := p.Stage.InferStageInfo(p.LlmProvider)
+			err := p.Dir.InferDirInfo(p.LlmProvider)
 			if err != nil {
 				return false, err
 			}
 		} else {
-			p.Stage.Mu.RUnlock()
+			p.Dir.Mu.RUnlock()
 		}
 
 		req := p.NewRequest()
@@ -75,8 +75,14 @@ func (p *Payload) Serve() (string, error) {
 		}
 	}
 
+	err = p.Drop()
+	if err != nil {
+		p.SetState(PayloadStateFailed)
+		return "", err
+	}
+
 	p.SetState(PayloadStateCompleted)
-	return p.Stage.Path, nil
+	return p.Dir.Path, nil
 }
 
 func (p *Payload) Classify(req *providers.JevRequest, classifiers *releventCls) (*Actions, error) {

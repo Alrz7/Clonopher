@@ -1,7 +1,7 @@
 package burrow
 
 import (
-	"clonopher/internal"
+	"clonopher/internal/fileSystem"
 	"clonopher/internal/loggy"
 	"path/filepath"
 	"sync"
@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-type Stage struct {
-	Mu       *sync.RWMutex     `yaml:"-"`
-	InfMu    *sync.RWMutex     `yaml:"-"`
-	Explored atomic.Bool       `yaml:"-"`
-	Path     string            `yaml:"path"`
-	Roots    map[string]*Stage `yaml:"substages"`
-	Files    []string          `yaml:"existingFiles"`
-	Info     *StageInfo        `yaml:"info"`
+type Directory struct {
+	Mu       *sync.RWMutex         `yaml:"-"`
+	InfMu    *sync.RWMutex         `yaml:"-"`
+	Explored atomic.Bool           `yaml:"-"`
+	Path     string                `yaml:"path"`
+	Children map[string]*Directory `yaml:"children"`
+	Files    []string              `yaml:"existingFiles"`
+	Info     *DirInfo              `yaml:"info"`
 }
 
 type InfoProvider struct {
@@ -24,8 +24,8 @@ type InfoProvider struct {
 	Model    string `yaml:"model" json:"model"`
 }
 
-type StageInfo struct {
-	StageID   string        `yaml:"stage_id" json:"stage_id"`
+type DirInfo struct {
+	DirId     string        `yaml:"dir_id" json:"dirId"`
 	Path      string        `yaml:"path" json:"path"`
 	CreatedAt time.Time     `yaml:"created_at" json:"created_at"`
 	UpdatedAt time.Time     `yaml:"updated_at" json:"updated_at"`
@@ -35,12 +35,12 @@ type StageInfo struct {
 	Modifier  *InfoProvider `yaml:"modifier,omitempty" json:"modifier,omitempty"`
 }
 
-func New(path string) *Stage {
-	new := &Stage{
-		Path:  path,
-		Roots: map[string]*Stage{},
-		InfMu: &sync.RWMutex{},
-		Mu:    &sync.RWMutex{},
+func New(path string) *Directory {
+	new := &Directory{
+		Path:     path,
+		Children: map[string]*Directory{},
+		InfMu:    &sync.RWMutex{},
+		Mu:       &sync.RWMutex{},
 	}
 	new.AddToAll()
 	return new
@@ -48,16 +48,16 @@ func New(path string) *Stage {
 
 // new with options...
 
-var All = make(map[string]*Stage)
+var All = make(map[string]*Directory)
 var AllMu = sync.RWMutex{}
 
-func (s *Stage) AddToAll() {
+func (d *Directory) AddToAll() {
 	AllMu.Lock()
 	defer AllMu.Unlock()
-	All[s.Path] = s
+	All[d.Path] = d
 }
 
-func GetFromAll(path string) (*Stage, bool) {
+func GetFromAll(path string) (*Directory, bool) {
 	AllMu.RLock()
 	defer AllMu.RUnlock()
 	res, ok := All[path]
@@ -65,25 +65,25 @@ func GetFromAll(path string) (*Stage, bool) {
 }
 
 // ----< Globals >----
-var Globals = make(map[string]*Stage)
+var Globals = make(map[string]*Directory)
 var GlbsMu = sync.RWMutex{}
 
-func (s *Stage) SetAsGlobal(title string) error {
+func (d *Directory) SetAsGlobal(title string) error {
 	GlbsMu.Lock()
 	defer GlbsMu.Unlock()
 	if title == "" {
 		var err error
-		title, err = filepath.Abs(filepath.Clean(s.Path))
+		title, err = filepath.Abs(filepath.Clean(d.Path))
 		if err != nil {
 			return err
 		}
 	}
-	Globals[title] = s
+	Globals[title] = d
 	return nil
 }
 
-func NewGlobal(title, path string) (*Stage, error) {
-	ok, err := internal.IsDir(path)
+func NewGlobal(title, path string) (*Directory, error) {
+	ok, err := fileSystem.IsDir(path)
 	if ok {
 		head := New(path)
 		err := head.ExploreGlobal(-1)
@@ -104,7 +104,7 @@ func NewGlobal(title, path string) (*Stage, error) {
 	}
 }
 
-func GetFromGlobals(title string) (*Stage, bool) {
+func GetFromGlobals(title string) (*Directory, bool) {
 	GlbsMu.RLock()
 	defer GlbsMu.RUnlock()
 	res, ok := Globals[title]

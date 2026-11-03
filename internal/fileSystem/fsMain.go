@@ -1,4 +1,4 @@
-package internal
+package fileSystem
 
 import (
 	"clonopher/internal/loggy"

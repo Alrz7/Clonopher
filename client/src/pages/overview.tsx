@@ -57,7 +57,7 @@ export function OverviewPage() {
           (filter === "active" && activeStates.includes(payload.state)) ||
           payload.state === filter;
         const haystack =
-          `${payload.name} ${payload.id} ${payload.stagePath} ${payload.lastAction}`.toLowerCase();
+          `${payload.name} ${payload.id} ${payload.DirPath} ${payload.lastAction}`.toLowerCase();
         return matchesFilter && haystack.includes(search.trim().toLowerCase());
       }),
     [payloads, filter, search],
@@ -145,7 +145,7 @@ export function OverviewPage() {
         <div className="payload-list-head" role="row">
           <span role="columnheader">Payload</span>
           <span role="columnheader">State</span>
-          <span role="columnheader">Stage</span>
+          <span role="columnheader">Directory</span>
           <span role="columnheader">Last action</span>
           <span role="columnheader">Updated</span>
         </div>
@@ -172,12 +172,12 @@ export function OverviewPage() {
               <StatusBadge state={payload.state} />
             </span>
             <span
-              className="payload-stage-cell"
+              className="payload-directory-cell"
               role="cell"
-              title={payload.stagePath || "Unassigned"}
+              title={payload.DirPath || "Unassigned"}
             >
-              <span className="stage-path-mark"></span>
-              {payload.stagePath || "Unassigned"}
+              <span className="directory-path-mark"></span>
+              {payload.DirPath || "Unassigned"}
             </span>
             <span
               className="payload-action-cell"

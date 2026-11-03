@@ -28,32 +28,31 @@ const (
 	PayloadStateCancelled PayloadState = "cancelled"
 )
 
-
 type Log = loggy.PydLog
 type PayloadStatus struct {
-	Mu         *sync.RWMutex   `json:"-"`
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	Stage      *burrow.Stage   `json:"-"`
-	Road       []*burrow.Stage `json:"-"`
-	State      PayloadState    `json:"state"`
-	Iteration  int             `json:"iteration"`
-	LastAction string          `json:"lastAction"`
-	Actions    []string        `json:"actions"`
+	Mu         *sync.RWMutex       `json:"-"`
+	ID         string              `json:"id"`
+	Name       string              `json:"name"`
+	Directory  *burrow.Directory   `json:"-"`
+	Road       []*burrow.Directory `json:"-"`
+	State      PayloadState        `json:"state"`
+	Iteration  int                 `json:"iteration"`
+	LastAction string              `json:"lastAction"`
+	Actions    []string            `json:"actions"`
 	Logs       []Log
 
 	//api-spec-paramters
-	StageString string   `json:"path"`
-	RoadString  []string `json:"road"`
+	Path    string   `json:"path"`
+	RoadStr []string `json:"road"`
 }
 
-func (p *Payload) ShiftStage(stage *burrow.Stage) {
+func (p *Payload) ShiftDir(dir *burrow.Directory) {
 	pStat := Stats.Get(p.Id)
 	pStat.Mu.Lock()
 	defer pStat.Mu.Unlock()
 
-	pStat.Road = append(pStat.Road, p.Stage)
-	pStat.Stage = stage
+	pStat.Road = append(pStat.Road, p.Dir)
+	pStat.Directory = dir
 }
 
 func (p *Payload) ShiftAction(action string) {
@@ -134,13 +133,13 @@ type Stdb map[string]*PayloadStatus
 var Stats = Stdb{}
 var StatsMu = sync.RWMutex{}
 
-func (db *Stdb) AddNew(id, name string, stage *burrow.Stage) {
+func (db *Stdb) AddNew(id, name string, dir *burrow.Directory) {
 	status := &PayloadStatus{
-		Mu:    &sync.RWMutex{},
-		ID:    id,
-		Name:  name,
-		State: PayloadStateQueued,
-		Stage: stage,
+		Mu:        &sync.RWMutex{},
+		ID:        id,
+		Name:      name,
+		State:     PayloadStateQueued,
+		Directory: dir,
 	}
 
 	StatsMu.Lock()

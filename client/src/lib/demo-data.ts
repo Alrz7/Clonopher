@@ -1,4 +1,4 @@
-// import type { PayloadStatus, StageSnapshot } from "./types";
+// import type { PayloadStatus, DirectorySnapshot } from "./types";
 
 // const ago = (minutes: number) =>
 //   new Date(Date.now() - minutes * 60_000).toISOString();
@@ -11,7 +11,7 @@
 //     iteration: 4,
 //     lastAction: "ACT_STAY_HERE",
 //     paths: [],
-//     stagePath: "Golang / HTTP / Middleware",
+//     dirPath: "Golang / HTTP / Middleware",
 //     startedAt: ago(14),
 //     updatedAt: ago(11),
 //     actions: [
@@ -31,7 +31,7 @@
 //       {
 //         id: "l2",
 //         type: "info",
-//         content: "Selected stage: Golang / HTTP / Middleware.",
+//         content: "Selected directory: Golang / HTTP / Middleware.",
 //         timestamp: ago(12),
 //       },
 //       {
@@ -49,7 +49,7 @@
 //     iteration: 3,
 //     lastAction: "ACT_INFER_STAGE",
 //     paths: [],
-//     stagePath: "Python / Tutorials",
+//     dirPath: "Python / Tutorials",
 //     startedAt: ago(1),
 //     updatedAt: ago(0.3),
 //     actions: ["ACT_EXPLORE", "ACT_CLASSIFY", "ACT_INFER_STAGE"],
@@ -65,7 +65,7 @@
 //         id: "l5",
 //         type: "warn",
 //         content:
-//           "Candidate path has overlapping topic labels; checking existing stages.",
+//           "Candidate path has overlapping topic labels; checking existing directories.",
 //         timestamp: ago(0.4),
 //       },
 //     ],
@@ -77,7 +77,7 @@
 //     iteration: 2,
 //     lastAction: "ACT_STAY_HERE",
 //     paths: [],
-//     stagePath: "Recipes / Soups",
+//     dirPath: "Recipes / Soups",
 //     startedAt: ago(22),
 //     updatedAt: ago(20),
 //     actions: ["ACT_EXPLORE", "ACT_CLASSIFY", "ACT_STAY_HERE"],
@@ -91,7 +91,7 @@
 //       {
 //         id: "l7",
 //         type: "info",
-//         content: "Existing Recipes stage is a suitable destination.",
+//         content: "Existing Recipes directory is a suitable destination.",
 //         timestamp: ago(20),
 //       },
 //     ],
@@ -103,7 +103,7 @@
 //     iteration: 5,
 //     lastAction: "ACT_INFER_STAGE",
 //     paths: [],
-//     stagePath: "Developer tools",
+//     dirPath: "Developer tools",
 //     startedAt: ago(6),
 //     updatedAt: ago(5),
 //     actions: [
@@ -125,14 +125,14 @@
 //         id: "l9",
 //         type: "warn",
 //         content:
-//           "No existing stage matched all customizations with high confidence.",
+//           "No existing directory matched all customizations with high confidence.",
 //         timestamp: ago(5.5),
 //       },
 //       {
 //         id: "l10",
 //         type: "error",
 //         content:
-//           "Stage inference exhausted retry budget without a stable target.",
+//           "Directory inference exhausted retry budget without a stable target.",
 //         timestamp: ago(5),
 //       },
 //     ],
@@ -144,7 +144,7 @@
 //     iteration: 0,
 //     lastAction: "",
 //     paths: [],
-//     stagePath: "—",
+//     dirPath: "—",
 //     startedAt: ago(0.1),
 //     updatedAt: ago(0.1),
 //     actions: [],
@@ -164,7 +164,7 @@
 //     iteration: 1,
 //     lastAction: "ACT_CANCELLED",
 //     paths: [],
-//     stagePath: "Go / Persistence / SQLite",
+//     dirPath: "Go / Persistence / SQLite",
 //     startedAt: ago(38),
 //     updatedAt: ago(36),
 //     actions: ["ACT_EXPLORE", "ACT_CLASSIFY", "ACT_CANCELLED"],
@@ -179,7 +179,7 @@
 //   },
 // ];
 
-// export const demoStageNames = [
+// export const demoDirectoryNames = [
 //   "Root",
 //   "Golang",
 //   "Python",
@@ -187,11 +187,11 @@
 //   "Developer tools",
 // ];
 
-// export const demoStageTree: StageSnapshot = {
+// export const demoDirectoryTree: DirectorySnapshot = {
 //   path: "/home/alireza/Documents/My_TESTS/Clonopher2",
 //   existingFiles: ["README.md", "inbox.md", "folder-rules.md"],
 //   info: {
-//     stage_id: "stage_root_01",
+//     directory_id: "directory_root_01",
 //     path: "/home/alireza/Documents/My_TESTS/Clonopher2",
 //     version: 3,
 //     brief:
@@ -199,37 +199,37 @@
 //     creator: { provider: "ollama", model: "qwen3.5:4b" },
 //     modifier: { provider: "ollama", model: "qwen3.5:4b" },
 //   },
-//   substages: {
+//   children: {
 //     Golang: {
 //       path: "/home/alireza/Documents/My_TESTS/Clonopher2/Golang",
 //       existingFiles: ["complex_gin_rate_limiter.md", "go-concurrency.md"],
 //       info: {
-//         stage_id: "stage_go_02",
+//         directory_id: "directory_go_02",
 //         path: "/Golang",
 //         version: 2,
 //         brief:
 //           "Go language, backend engineering, concurrency, HTTP services, and tooling.",
 //       },
-//       substages: {
+//       children: {
 //         HTTP: {
 //           path: "/home/alireza/Documents/My_TESTS/Clonopher2/Golang/HTTP",
 //           existingFiles: ["gin-routing.md"],
 //           info: {
-//             stage_id: "stage_http_03",
+//             directory_id: "directory_http_03",
 //             version: 1,
 //             brief: "HTTP servers, routers, middleware, and API behavior.",
 //           },
-//           substages: {
+//           children: {
 //             Middleware: {
 //               path: "/home/alireza/Documents/My_TESTS/Clonopher2/Golang/HTTP/Middleware",
 //               existingFiles: ["rate-limiter.md"],
 //               info: {
-//                 stage_id: "stage_middleware_04",
+//                 directory_id: "directory_middleware_04",
 //                 version: 1,
 //                 brief:
 //                   "Reusable middleware patterns and request processing policies.",
 //               },
-//               substages: {},
+//               children: {},
 //             },
 //           },
 //         },
@@ -237,12 +237,12 @@
 //           path: "/home/alireza/Documents/My_TESTS/Clonopher2/Golang/Persistence",
 //           existingFiles: ["sqlite-migrations.md", "pgx-notes.md"],
 //           info: {
-//             stage_id: "stage_persist_05",
+//             directory_id: "directory_persist_05",
 //             version: 1,
 //             brief:
 //               "Database drivers, schema changes, and persistence patterns.",
 //           },
-//           substages: {},
+//           children: {},
 //         },
 //       },
 //     },
@@ -250,20 +250,20 @@
 //       path: "/home/alireza/Documents/My_TESTS/Clonopher2/Python",
 //       existingFiles: ["pythonDictionaryTutorial.md"],
 //       info: {
-//         stage_id: "stage_py_06",
+//         directory_id: "directory_py_06",
 //         version: 2,
 //         brief: "Python language notes and legacy scripting references.",
 //       },
-//       substages: {
+//       children: {
 //         Tutorials: {
 //           path: "/home/alireza/Documents/My_TESTS/Clonopher2/Python/Tutorials",
 //           existingFiles: ["pythonDictionaryTutorial.md"],
 //           info: {
-//             stage_id: "stage_python_tutorials_07",
+//             directory_id: "directory_python_tutorials_07",
 //             version: 1,
 //             brief: "Guides and worked examples organized by language concept.",
 //           },
-//           substages: {},
+//           children: {},
 //         },
 //       },
 //     },
@@ -271,20 +271,20 @@
 //       path: "/home/alireza/Documents/My_TESTS/Clonopher2/Recipes",
 //       existingFiles: ["tomatoSoupRecipe.md", "lentilSoup.md"],
 //       info: {
-//         stage_id: "stage_recipe_08",
+//         directory_id: "directory_recipe_08",
 //         version: 4,
 //         brief: "Cooking notes, ingredients, preparation steps, and meal ideas.",
 //       },
-//       substages: {
+//       children: {
 //         Soups: {
 //           path: "/home/alireza/Documents/My_TESTS/Clonopher2/Recipes/Soups",
 //           existingFiles: ["tomatoSoupRecipe.md"],
 //           info: {
-//             stage_id: "stage_soup_09",
+//             directory_id: "directory_soup_09",
 //             version: 1,
 //             brief: "Soup recipes and variations.",
 //           },
-//           substages: {},
+//           children: {},
 //         },
 //       },
 //     },
@@ -292,12 +292,12 @@
 //       path: "/home/alireza/Documents/My_TESTS/Clonopher2/Developer tools",
 //       existingFiles: ["MyVsCodeCustomizations.md"],
 //       info: {
-//         stage_id: "stage_tools_10",
+//         directory_id: "directory_tools_10",
 //         version: 1,
 //         brief:
 //           "Editor setup, extensions, and developer workflow customization.",
 //       },
-//       substages: {},
+//       children: {},
 //     },
 //   },
 // };
