@@ -21,7 +21,7 @@ type concurrentUploadPayload struct {
 }
 
 type concurrentUploadResponse struct {
-	Address string `json:"address"`
+	Path    string `json:"path"`
 	Message string `json:"message"`
 }
 
@@ -154,12 +154,12 @@ func TestConcurrentPayloadUpload(t *testing.T) {
 
 		var response concurrentUploadResponse
 		if err := json.Unmarshal([]byte(result.body), &response); err == nil {
-			t.Logf("request %d: %-26s status=%d duration=%s address=%s message=%q",
+			t.Logf("request %d: %-26s status=%d duration=%s path=%s message=%q",
 				i+1,
 				cases[i].name,
 				result.statusCode,
 				result.duration.Round(time.Millisecond),
-				response.Address,
+				response.Path,
 				response.Message,
 			)
 		} else {

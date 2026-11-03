@@ -158,16 +158,16 @@ func (a *ACTStayHere) ReServe() bool {
 //--------------
 
 func (p *Payload) Drop() error {
-	for _, src := range p.Srcs {
+	for _, asset := range p.Assets {
 		switch p.Options.ActionPolicy {
 		case internal.PlcCopy:
-			finalPath, err := p.Dir.CopyFileHere(src)
+			finalPath, err := p.Dir.SubmitCopyFileHere(asset.Src)
 			if err != nil {
 				return err
 			}
 			loggy.AddNewf("Lets Drop it here: %v", loggy.PdLInfo, finalPath)
 		case internal.PlcMove:
-			finalPath, err := p.Dir.DropFileHere(src)
+			finalPath, err := p.Dir.SubmitDropFileHere(asset.Src)
 			if err != nil {
 				return err
 			}
@@ -175,7 +175,7 @@ func (p *Payload) Drop() error {
 		case internal.PlcNone:
 			return nil
 		default:
-			finalPath := filepath.Join(p.Dir.Path, filepath.Base(src))
+			finalPath := filepath.Join(p.Dir.Path, filepath.Base(asset.Src))
 			loggy.AddNewf("Lets Drop it here; ", loggy.PdLInfo, finalPath)
 		}
 	}

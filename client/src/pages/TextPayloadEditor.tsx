@@ -5,7 +5,7 @@ export type GlobalHead = string;
 
 export type TextPayloadUploadResponse = {
   message?: string;
-  address?: string;
+  path?: string;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -130,11 +130,11 @@ export async function uploadTextPayload(
   const envelope = asRecord(firstDefined(body, "data", "Data"));
   const source = Object.keys(envelope).length ? envelope : body;
   const message = firstDefined(source, "message", "Message");
-  const address = firstDefined(source, "address", "Address");
+  const path = firstDefined(source, "path", "Path");
 
   return {
     message: typeof message === "string" ? message : undefined,
-    address: typeof address === "string" ? address : undefined,
+    path: typeof path === "string" ? path : undefined,
   };
 }
 
@@ -248,7 +248,7 @@ export default function TextPayloadEditor({
         },
         uploadEndpoint,
       );
-      setSuccess(result.address || result.message || "Payload processed.");
+      setSuccess(result.path || result.message || "Payload processed.");
       onProcessed?.(result);
     } catch (caught) {
       setError(

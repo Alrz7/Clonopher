@@ -4,11 +4,13 @@ import (
 	"clonopher/internal/loggy"
 	"os"
 	"path/filepath"
+
+	"github.com/spf13/fileflow"
 )
 
 const (
-	ConfgDirName = "clonopher"
-	ClsDirName   = "classifiers"
+	ConfgDirName  = "clonopher"
+	ClsDirName    = "classifiers"
 	UploadDirName = "ClonopherUploads"
 )
 
@@ -41,6 +43,8 @@ func IsFile(path string) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return false, loggy.Sayf("invalid path %q: %w", path, err)
+	} else if !fileflow.Exists(path) {
+		return false, loggy.Sayf("file <%v> is not defined or accessble!", path)
 	}
 	return info.Mode().IsRegular(), nil
 }

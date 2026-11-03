@@ -2,13 +2,17 @@ package api
 
 import (
 	"clonopher/internal"
+	"clonopher/internal/fileSystem"
 	"clonopher/internal/loggy"
 	"encoding/json"
 	"errors"
 	"io"
 	"maps"
 	"net/http"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func (api *ApiConfig) writeJSON(w http.ResponseWriter, status int, data internal.Envelope, headers http.Header) error {
@@ -74,4 +78,35 @@ func (api *ApiConfig) readJson(w http.ResponseWriter, r *http.Request, dst any) 
 	}
 
 	return nil
+}
+
+func SetFallbackName(files []*fileSystem.Asset, name *string) {
+	var names []string
+
+	for _, f := range files {
+		name := strings.TrimSuffix(filepath.Base(f.FileName), filepath.Ext(f.FileName))
+		name = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(name), " ", "-"))
+
+		if name == "" {
+			continue
+		}
+
+		if r := []rune(name); len(r) > 8 {
+			name = string(r[:8])
+		}
+
+		names = append(names, name)
+		if len(names) == 2 {
+			break
+		}
+	}
+
+	if len(names) == 0 {
+		names = append(names, "payload")
+	}
+
+	now := time.Now()
+	*name = strings.Join(names, "-") + "-" +
+		now.Format("060102-150405") + "-" +
+		strconv.FormatInt(int64(now.Nanosecond()), 36)
 }

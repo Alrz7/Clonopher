@@ -57,11 +57,9 @@ var rootCmd = &cobra.Command{
 		if flags.Changed("env") {
 			config.Default.App.Env = env
 		}
-		if flags.Changed("roots") {
-			err := ParseRoots(roots)
-			if err != nil {
-				return err
-			}
+		err := ParseRoots(roots)
+		if err != nil {
+			return err
 		}
 
 		return nil

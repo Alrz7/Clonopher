@@ -23,7 +23,8 @@ func (api *ApiConfig) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPost, "/api/v1/directories/info", api.HandleGetDirInfo)
 
 	// Payload submission
-	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/text", api.HandleUploadTextFile)
+	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/new", api.HandleProcessFiles)
+	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/text", api.HandleProcessTextFile)
 	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/file", api.HandleUploadFile)
 
 	return router

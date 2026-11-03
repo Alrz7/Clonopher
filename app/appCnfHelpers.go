@@ -7,40 +7,41 @@ import (
 	"clonopher/internal"
 	"clonopher/internal/fileSystem"
 	"clonopher/internal/loggy"
+	"crypto/rand"
 	"path/filepath"
 	"strings"
+	"sync"
 	"unicode"
 )
 
 func ParseRoots(roots string) error {
-	if roots == "" {
-		return nil
-	}
-	res := map[string]string{}
+	if roots != "" {
+		res := map[string]string{}
 
-	for _, pair := range strings.Split(roots, ",") {
-		pair = strings.TrimSpace(pair)
-		root := strings.SplitN(pair, ":", 2)
-		if len(root) != 2 {
-			return loggy.Say("uncorrect format for roots!")
-		}
-		key := strings.TrimSpace(root[0])
-		val := strings.TrimSpace(root[1])
-		if key == "" || val == "" {
-			continue
-		}
-		res[key] = val
-	}
-
-	for key, val := range res {
-		ok, err := fileSystem.IsDir(val)
-		if ok {
-			config.Default.App.Roots[key] = val
-		} else {
-			if err != nil {
-				return err
+		for pair := range strings.SplitSeq(roots, ",") {
+			pair = strings.TrimSpace(pair)
+			root := strings.SplitN(pair, ":", 2)
+			if len(root) != 2 {
+				return loggy.Say("uncorrect format for roots!")
 			}
-			return loggy.Sayf("path <%v> is not defined or accessible!", val)
+			key := strings.TrimSpace(root[0])
+			val := strings.TrimSpace(root[1])
+			if key == "" || val == "" {
+				continue
+			}
+			res[key] = val
+		}
+
+		for key, val := range res {
+			ok, err := fileSystem.IsDir(val)
+			if ok {
+				config.Default.App.Roots[key] = val
+			} else {
+				if err != nil {
+					return err
+				}
+				return loggy.Sayf("path <%v> is not defined or accessible!", val)
+			}
 		}
 	}
 
@@ -102,11 +103,23 @@ func ParseSources(sources, infos, root, actionPolicy string) ([]*core.Payload, e
 			name = string(nameRunes[:35]) + "..."
 		}
 
+		var assets []*fileSystem.Asset
+		for _, src := range srcs {
+			asset := fileSystem.Asset{
+				Mu:       &sync.RWMutex{},
+				ID:       rand.Text(),
+				FileName: name,
+				Src:      src,
+				Status:   fileSystem.StgActive,
+			}
+			assets = append(assets, &asset)
+		}
+
 		p, err := core.New(
 			&config.Default,
 			name,
 			root,
-			srcs,
+			assets,
 			desc,
 			actionPolicy,
 			internal.CliMode,

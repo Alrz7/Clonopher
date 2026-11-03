@@ -2,10 +2,12 @@ package fileSystem
 
 import (
 	"clonopher/app/config"
+	"clonopher/internal/loggy"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -17,12 +19,12 @@ type StagingStat string
 
 const (
 	StgIdle   StagingStat = "idle"
-	StgAction StagingStat = "action"
+	StgActive StagingStat = "active"
 	StgDone   StagingStat = "Done"
 )
 const StagingFileName = "StagingProfiles.yaml"
 
-type Staging struct {
+type Asset struct {
 	Mu       *sync.RWMutex `yaml:"-" json:"-"`
 	ID       string        `yaml:"id" json:"id"`
 	FileName string        `yaml:"file_name" json:"fileName"`
@@ -30,7 +32,7 @@ type Staging struct {
 	Status   StagingStat   `yaml:"status" json:"status"`
 }
 
-type Stdb map[string]*Staging
+type Stdb map[string]*Asset
 
 var GlobalStagings = Stdb{}
 var GlMu = sync.RWMutex{}
@@ -66,7 +68,7 @@ func (db *Stdb) AddNewStaging(name, src string) error {
 	sum := sha256.Sum256([]byte(name + src + time.Now().String()))
 	id := hex.EncodeToString(sum[:])
 
-	status := &Staging{
+	status := &Asset{
 		Mu:       &sync.RWMutex{},
 		ID:       id,
 		FileName: name,
@@ -80,15 +82,16 @@ func (db *Stdb) AddNewStaging(name, src string) error {
 	return db.WriteStgs()
 }
 
-func (db *Stdb) GetById(id string) *Staging {
+func (db *Stdb) GetById(id string) (*Asset, bool) {
 	GlMu.Lock()
 	defer GlMu.Unlock()
-	return (*db)[id]
+	res, ok := (*db)[id]
+	return res, ok
 }
 
 func (db *Stdb) DeleteById(id string) error {
-	staging := db.GetById(id)
-	if staging == nil {
+	staging, ok := db.GetById(id)
+	if !ok {
 		return nil
 	}
 
@@ -107,8 +110,8 @@ func (db *Stdb) DeleteById(id string) error {
 	return nil
 }
 
-func (db *Stdb) GetIdleStagings() map[string]Staging {
-	res := map[string]Staging{}
+func (db *Stdb) GetIdleStagings() map[string]Asset {
+	res := map[string]Asset{}
 	GlMu.RLock()
 	for id, st := range *db {
 		st.Mu.RLock()
@@ -135,4 +138,53 @@ func (db *Stdb) WriteStgs() error {
 		return err
 	}
 	return nil
+}
+
+type Assets []*Asset
+
+func (assets Assets) RollbackStats() {
+	for _, file := range assets {
+		file.Mu.Lock()
+		if file.Status == StgActive {
+			file.Status = StgIdle
+		}
+		file.Mu.Unlock()
+	}
+}
+
+func ParseAssets(stagings []string) (Assets, error) {
+	assets := Assets{}
+
+	for _, st := range stagings {
+		file, ok := GlobalStagings.GetById(st)
+		if !ok {
+			return assets, loggy.Sayf("id %v vas invalid, no Staging file with this id was found!", st)
+
+		}
+
+		if slices.Contains(assets, file) {
+			continue
+		}
+
+		file.Mu.Lock()
+		if file.Status == StgIdle {
+			ok, err := IsFile(file.Src)
+			if !ok {
+				appErr := loggy.Sayf("something went wrong with <%v>", file.Src)
+				if err != nil {
+					appErr = loggy.Sayf("something went wrong with <%v>, err: %v", file.Src, err.Error())
+				}
+				loggy.AddNew(appErr.Error(), loggy.PdLError)
+				file.Mu.Unlock()
+				return assets, appErr
+			}
+			assets = append(assets, file)
+			file.Status = StgActive
+		} else {
+			file.Mu.Unlock()
+			return assets, loggy.Sayf("there was a Conflict while selecting Asset <%v>", file.Src)
+		}
+		file.Mu.Unlock()
+	}
+	return assets, nil
 }

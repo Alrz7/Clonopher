@@ -15,7 +15,84 @@ import (
 	"strings"
 )
 
-func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Request) {
+func (api *ApiConfig) HandleProcessFiles(w http.ResponseWriter, r *http.Request) {
+	var entry struct {
+		Name        string   `json:"name"`
+		Stagings    []string `json:"stagings"` // this is gonna give us the ID for each StagedFile
+		Destination string   `json:"destination"`
+		Description string   `json:"description"`
+	}
+	err := api.readJson(w, r, &entry)
+	if err != nil {
+		api.badRequestResponse(w, r, err)
+		return
+	}
+	if len(entry.Stagings) == 0 {
+		api.badRequestResponse(w, r, loggy.Say("no staging file was provided!"))
+		return
+	}
+
+	finalDstRoot, ok := config.Default.App.Roots[entry.Destination]
+	if !ok {
+		finalDstRoot = entry.Destination
+	}
+	ok, err = fileSystem.IsDir(finalDstRoot)
+	if !ok {
+		if err != nil {
+			api.badRequestResponse(w, r, err)
+			return
+		}
+		api.errorResponse(w, r, http.StatusInternalServerError, loggy.Sayf("something went wrong while validating the destination Root: %v", entry.Destination))
+		return
+	}
+
+	assets, err := fileSystem.ParseAssets(entry.Stagings)
+	rollback := true
+	defer func() {
+		if rollback {
+			assets.RollbackStats()
+		}
+	}()
+	if err != nil {
+		api.errorResponse(w, r, 422, err)
+		return
+	}
+
+	if entry.Name == "" {
+		SetFallbackName(assets, &entry.Name)
+	}
+
+	payload, err := core.New(&config.Default, entry.Name, finalDstRoot, assets, entry.Description, internal.PlcNone, internal.ApiMode)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = api.writeJSON(w, http.StatusAccepted, internal.Envelope{"message": "starting to serve payload!"}, nil)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+
+	rollback = false
+
+	go func() {
+		defer assets.RollbackStats()
+		_, err := payload.Serve()
+		if err != nil {
+			payload.ShiftError(err)
+			return
+		}
+
+		err = payload.Drop()
+		if err != nil {
+			payload.ShiftError(err)
+			return
+		}
+	}()
+}
+
+func (api *ApiConfig) HandleProcessTextFile(w http.ResponseWriter, r *http.Request) {
 	var entry struct {
 		FileName    string `json:"fileName"`
 		Head        string `json:"head"`
@@ -28,34 +105,44 @@ func (api *ApiConfig) HandleUploadTextFile(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	payload, err := core.New(&config.Default, entry.FileName, entry.Head, []string{}, entry.Description, internal.PlcNone, internal.ApiMode)
-	if err != nil {
-		api.serverErrorResponse(w, r, err)
+	entry.FileName = strings.TrimSpace(entry.FileName)
+	if strings.ContainsAny(entry.FileName, "/\\") || entry.FileName == "." || entry.FileName == ".." || entry.FileName == "" {
+		api.badRequestResponse(w, r, loggy.Say("file-name should not be empty or containing path charectors like \\ / .."))
 		return
 	}
-	dst, err := payload.Serve()
-	if err != nil {
-		api.serverErrorResponse(w, r, err)
-		return
-	}
-	err = payload.Dir.Submit()
+
+	payload, err := core.New(&config.Default, entry.FileName, entry.Head, []*fileSystem.Asset{}, entry.Description, internal.PlcNone, internal.ApiMode)
 	if err != nil {
 		api.serverErrorResponse(w, r, err)
 		return
 	}
 
-	path := filepath.Join(dst, entry.FileName)
-
-	err = os.WriteFile(path, []byte(entry.Content), 0644)
+	err = api.writeJSON(w, http.StatusAccepted, internal.Envelope{"message": "starting to serve payload!"}, nil)
 	if err != nil {
 		api.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = api.writeJSON(w, http.StatusOK, internal.Envelope{"message": "payload served!", "address": path}, nil)
-	if err != nil {
-		loggy.Error(err)
-	}
+	go func() {
+		dst, err := payload.Serve()
+		if err != nil {
+			payload.ShiftError(err)
+			return
+		}
+		err = payload.Dir.Submit()
+		if err != nil {
+			payload.ShiftError(err)
+			return
+		}
+
+		path := filepath.Join(dst, entry.FileName)
+
+		err = os.WriteFile(path, []byte(entry.Content), 0644)
+		if err != nil {
+			payload.ShiftError(err)
+			return
+		}
+	}()
 }
 
 func (api *ApiConfig) HandleUploadFile(w http.ResponseWriter, r *http.Request) {
