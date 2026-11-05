@@ -26,6 +26,7 @@ func (api *ApiConfig) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/new", api.HandleProcessFiles)
 	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/text", api.HandleProcessTextFile)
 	router.HandlerFunc(http.MethodPost, "/api/v1/payloads/file", api.HandleUploadFile)
+	router.HandlerFunc(http.MethodDelete, "/api/v1/payloads/file", api.HandleDeleteStaging)
 
 	return router
 }

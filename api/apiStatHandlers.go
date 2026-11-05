@@ -143,3 +143,28 @@ func (api *ApiConfig) HandleGetStagingFiles(w http.ResponseWriter, r *http.Reque
 		return
 	}
 }
+
+func (api *ApiConfig) HandleDeleteStaging(w http.ResponseWriter, r *http.Request) {
+	var entry struct {
+		ID string `json:"id"`
+	}
+	err := api.readJson(w, r, &entry)
+	if err != nil {
+		api.badRequestResponse(w, r, err)
+		return
+	}
+
+	err = api.writeJSON(w, http.StatusAccepted, internal.Envelope{"message": "Deleting Asset..."}, nil)
+	if err != nil {
+		api.serverErrorResponse(w, r, err)
+		return
+	}
+
+	go func() {
+		err = fileSystem.GlobalStagings.DeleteById(entry.ID)
+		if err != nil {
+			loggy.AddNewr("There was an error while deleting Asset", loggy.PdLError, err)
+			return
+		}
+	}()
+}

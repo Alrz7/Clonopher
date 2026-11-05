@@ -3,7 +3,7 @@ import { AppLayout } from "../components/app-layout";
 import { OverviewPage } from "../pages/overview";
 import { PayloadInspectorPage } from "../pages/payload-inspector";
 import { DirectoryCanvasPage } from "../pages/stage-canvas";
-import TextPayloadEditor from "@/pages/TextPayloadEditor";
+import { PayloadComposerPage } from "../features/payloads/payload-composer";
 
 export function App() {
   return (
@@ -12,7 +12,7 @@ export function App() {
         <Route index element={<OverviewPage />} />
         <Route path="payloads/:payloadId" element={<PayloadInspectorPage />} />
         <Route path="directories" element={<DirectoryCanvasPage />} />
-        <Route path="upload/content" element={<TextPayloadEditor />} />
+        <Route path="upload/content" element={<PayloadComposerPage />} />
         <Route path="*" element={<OverviewPage />} />
       </Route>
     </Routes>

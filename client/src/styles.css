@@ -1359,20 +1359,21 @@ kbd {
 .floating-log-button {
   position: fixed;
   z-index: 20;
-  right: 24px;
-  bottom: 22px;
+  right: 5px;
+  top: 64px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 44px;
   padding: 0 13px;
-  border: 1px solid #4a4860;
+  border: 1px solid #4a486065;
   border-radius: 9px;
-  background: #252431;
+  border-top-right-radius: 1px;
+  background: #2524312a;
   color: #e9e8f4;
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.36);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 560;
   transition:
     transform 0.15s ease,

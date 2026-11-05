@@ -23,7 +23,7 @@ func Main() error {
 		return err
 	}
 
-	err = fileSystem.GlobalStagings.LoadExistingStagings()
+	err = fileSystem.GlobalStagings.LoadAssetConfig()
 	if err != nil {
 		return err
 	}
