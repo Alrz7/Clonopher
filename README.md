@@ -6,6 +6,8 @@
 
 **A context-aware file organizer powered by Go and Jev.**
 
+> **Clonopher is a work in progress.** CLI/API behavior, configuration, and internal architecture may change.
+
 Clonopher organizes files using their context, directory structure, and configurable classifiers — not just filenames or extensions. It is under active development.
 
 ## Architecture at a glance
