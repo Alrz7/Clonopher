@@ -1,15 +1,8 @@
-# Clonopher
-
-```text
-   _____ _                   _
-  / ____| |                 | |
- | |    | | ___  _ __   ___ | |__   ___  _ __   ___ _ __
- | |    | |/ _ \| '_ \ / _ \| '_ \ / _ \| '_ \ / _ \ '__|
- | |____| | (_) | | | | (_) | |_) | (_) | |_) |  __/ |
-  \_____|_|\___/|_| |_|\___/|_.__/ \___/| .__/ \___|_|
-                                         | |
-                                         |_|
-```
+<div align="center">
+  <a href="https://github.com/Alrz7/Marble">
+    <img width="2011" height="505" alt="clonopher-banner" src="https://github.com/user-attachments/assets/4a3cc52f-7deb-487c-9991-9b3638857e62" />
+  </a>
+</div>
 
 **A context-aware file organizer powered by Go and Jev.**
 
